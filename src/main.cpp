@@ -7,6 +7,7 @@ using namespace std;
 using namespace Eigen;
 
 int main(){
+// region Tensor tests
     Tensor tensor(3,3);
     auto [row, col] = tensor.shape();
     int s = 0;
@@ -22,7 +23,7 @@ int main(){
         }
         cout<<endl;
     }
-    auto [smaddr, height, width] = tensor.view(1, 2, 1, 2);
+    auto [smaddr, height, width, mcols] = tensor.view(1, 2, 1, 2);
     Tensor slc = tensor.slice(1,1,2,2);
     auto [sr, sc] = slc.shape();
     for(int i=0; i<sr; i++){
@@ -32,5 +33,27 @@ int main(){
         cout<<endl;
     }
     cout<<endl;
+//endregion Tensor tests
+
+// region Tensor3D tests
+    Tensor3D tensor_b(2,2,2);
+    for(int k=0; k<2; k++)
+        for(int i=0; i<2; i++){
+            for(int j=0; j<2; j++){
+                tensor_b.put(k,i,j,s++);
+            }
+        }
+    
+    for (int k=0; k<2; k++)
+        for(int i=0; i<2; i++){
+            for(int j=0; j<2; j++){
+                cout<<tensor_b[k][i][j]<<" ";
+            }
+            cout<<endl;
+        }
+    
+    auto [b, r, c] = tensor_b.sliceBatch(1,2).shape();
+    cout<<b<<' '<<r<<' '<<c<<endl;
+//endregion Tensor3D tests
     return 0;
 }
