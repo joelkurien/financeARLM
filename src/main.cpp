@@ -7,53 +7,23 @@ using namespace std;
 using namespace Eigen;
 
 int main(){
-// region Tensor tests
-    Tensor tensor(3,3);
-    auto [row, col] = tensor.shape();
-    int s = 0;
-    for(int i=0; i<row; i++){
-        for(int j=0; j<col; j++){
-            tensor.put(i,j,s++);
-        }
-    }
-
-    for(int i=0; i<row; i++){
-        for(int j=0; j<col; j++){
-            cout<<tensor[i][j]<<" ";
-        }
-        cout<<endl;
-    }
-    auto [smaddr, height, width, mcols] = tensor.view(1, 2, 1, 2);
-    Tensor slc = tensor.slice(1,1,2,2);
-    auto [sr, sc] = slc.shape();
-    for(int i=0; i<sr; i++){
-        for(int j=0; j<sc; j++){
-            cout<<slc[i][j]<<" ";
-        }
-        cout<<endl;
-    }
+    Tensor tensor({4,2});
+    vector<size_t> t_shape = tensor.shape();
+    for(auto sh: t_shape){
+        cout<<sh<<" ";
+    } 
     cout<<endl;
-//endregion Tensor tests
+    for(size_t i=0; i<tensor.size(); i++){
+        tensor.put(i);
+    }
 
-// region Tensor3D tests
-    Tensor3D tensor_b(2,2,2);
-    for(int k=0; k<2; k++)
-        for(int i=0; i<2; i++){
-            for(int j=0; j<2; j++){
-                tensor_b.put(k,i,j,s++);
-            }
+    Tensor reshaped = tensor.reshape({2,4});
+    Tensor slc = reshaped.slice({1,1}, {1,3});
+    for(size_t i=0; i<1; i++){
+        for(size_t j=0; j<3; j++){
+            cout<<slc.at({i,j})<<" ";
         }
-    
-    for (int k=0; k<2; k++)
-        for(int i=0; i<2; i++){
-            for(int j=0; j<2; j++){
-                cout<<tensor_b[k][i][j]<<" ";
-            }
-            cout<<endl;
-        }
-    
-    auto [b, r, c] = tensor_b.sliceBatch(1,2).shape();
-    cout<<b<<' '<<r<<' '<<c<<endl;
-//endregion Tensor3D tests
+        cout<<endl;
+    }
     return 0;
 }
