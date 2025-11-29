@@ -7,20 +7,42 @@ using namespace std;
 using namespace Eigen;
 
 int main(){
-    Tensor tensor({4,2});
-    vector<size_t> t_shape = tensor.shape();
-    for(auto sh: t_shape){
-        cout<<sh<<" ";
-    } 
+    Tensor tensor({2,4});
+    tensor.show();
     cout<<endl;
-    for(size_t i=0; i<tensor.size(); i++){
-        tensor.put(i);
+    // vector<size_t> t_shape = tensor.shape();
+    // for(auto sh: t_shape){
+    //     cout<<sh<<" ";
+    // } 
+    // cout<<endl;
+    size_t c = 0;
+    for(size_t i=0; i<2; i++){
+        for(size_t j=0; j<4; j++){
+            tensor.put({i,j}, c++);
+        }
     }
-
-    Tensor reshaped = tensor.reshape({2,4});
-    Tensor slc = reshaped.slice({1,1}, {1,3});
-    for(size_t i=0; i<1; i++){
-        for(size_t j=0; j<3; j++){
+    tensor.show();
+    Tensor reshaped = tensor.reshape({4,2});
+    Tensor permutate = tensor.permute();
+    Tensor slc = reshaped.slice({1,0}, {2,2}).permute();
+    cout<<"Tranpose: "<<endl;
+    for(size_t i=0; i<4; i++){
+        for(size_t j=0; j<2; j++){
+            cout<<permutate.at({i,j})<<" ";
+        }
+        cout<<endl;
+    }
+    cout<<"Reshaped: "<<endl;
+    for(size_t i=0; i<4; i++){
+        for(size_t j=0; j<2; j++){
+            cout<<reshaped.at({i,j})<<" ";
+        }
+        cout<<endl;
+    }
+    slc.show();
+    cout<<"Sliced: "<<endl;
+    for(size_t i=0; i<2; i++){
+        for(size_t j=0; j<2; j++){
             cout<<slc.at({i,j})<<" ";
         }
         cout<<endl;
