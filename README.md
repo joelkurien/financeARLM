@@ -1,10 +1,24 @@
-* Implementing a transformer from scratch and using it to build an ARLM for summarizing or extracting key information from financial papers and using it to train financial strategies
+# Financial ARLM: Transformer From Scratch + Backtesting Engine
 
-**Numpy Tensor Implementations**
-    - Day 1: Created the C++ Executables using CMake and installed and integrated the Eigen Library for matrix implementation and linear algebra operations.
-    - Day 2: Created the Tensor library -> Focused more on 2D tensors, created shape functions, update operation, memory stride views for memory efficient matrix updation.
-    - Day 3: Created the 3D tensors for batched tensor processing (heavily used in transformers) - implemented copy batch slicing, base batch operations
-    - Day 4: Generalized the two tensor classes into a single tensor that accessed the tensor data using pointer + shape arithematics
-          - Implemented view-based slicing, reshaping; optimized stride calculations
-    - Day 5: Added Broadcasting rules such as shape checks, stride updations for unequal dimensions, unsqueeze and expand dimensions rules + Added the boilerplate for arithematic operations
-* Building a backtesting engine from scratch to integrate with the ARLM 
+This project implements a transformer architecture entirely from scratch and uses it to build an Autonomous Research Language Model (ARLM) capable of summarizing financial documents and extracting key signals for downstream trading strategies. A custom backtesting engine is being developed alongside the ARLM for strategy evaluation.
+
+## Tensor Library (C++)
+
+**Day 1 — Build & Linear Algebra Setup**  
+Created the C++ executable framework with CMake. Integrated the Eigen library to support matrix operations and high-performance linear algebra routines.
+
+**Day 2 — Initial Tensor System (2D)**  
+Implemented a basic tensor class focused on 2D operations. Added shape handling, update functions, and stride-based memory views to support efficient in-place matrix updates.
+
+**Day 3 — Batched 3D Tensors**  
+Extended the tensor class to 3D for batch processing (essential for transformer workloads). Added batch slicing, deep/shallow views, and batched update operations.
+
+**Day 4 — Unified General Tensor Class**  
+Merged the 2D and 3D structures into a single N-dimensional tensor using a raw pointer + stride arithmetic for data access. Added flexible slicing, reshaping, and optimized stride computation for contiguous and non-contiguous views.
+
+**Day 5 — Broadcasting Support**  
+Implemented complete broadcasting rules: shape inference, leading/trailing singleton handling, stride rewriting, and unsqueeze/expand mechanics. Added scaffolding for element-wise arithmetic using stride-based iteration.
+
+## Backtesting Engine
+
+Designed and implemented the foundation of a custom backtesting engine intended for seamless integration with the ARLM, enabling direct evaluation of strategy outputs generated from financial text analysis.
