@@ -19,6 +19,9 @@ Merged the 2D and 3D structures into a single N-dimensional tensor using a raw p
 **Day 5 — Broadcasting Support**  
 Implemented complete broadcasting rules: shape inference, leading/trailing singleton handling, stride rewriting, and unsqueeze/expand mechanics. Added scaffolding for element-wise arithmetic using stride-based iteration.
 
+**Day 6 — Transformer Arithematic Support**  
+Implemented arithematic methods that a transformer needs: Matrix addition, linear matrix multiplication, scalar matrix multiplication, scalar matrix division, scalar matrix subtraction.
+
 ## Backtesting Engine
 
 Designed and implemented the foundation of a custom backtesting engine intended for seamless integration with the ARLM, enabling direct evaluation of strategy outputs generated from financial text analysis.
