@@ -2,30 +2,32 @@
 #include <iostream>
 #include <vector>
 #include "tensor.h"
+#include "nditerator.h"
 
 using namespace std;
 using namespace Eigen;
 
 int main(){
-    Tensor a({3,4});
-    Tensor b({2,3,4});
+    Tensor a({2,2});
+    Tensor b({2,2});
     double c = 0;
-    //for(size_t i=0; i<2; i++){
-        for(size_t j=0; j<3; j++){
-            for(size_t k=0; k<4; k++){
-                a.put({j,k}, c++);
-            }
-        }
-    //}
-    double d = 0;
-    for(size_t i=0; i<2; i++)
-    for(size_t j=0; j<3; j++){
-        for(size_t k=0; k<4; k++){
-            b.put({i,j,k}, d++);
+    for(size_t i=0; i<2; i++){
+        for(size_t j=0; j<2; j++){
+                a.put({i,j}, c++);
         }
     }
-    Tensor x = a+b;
-    
-    cout<<endl;
+    double d = 0;
+    for(size_t i=0; i<2; i++)
+    for(size_t j=0; j<2; j++){
+        b.put({i,j}, d+=2);
+    }
+    Tensor x = a*2.695784;
+    x.prnt(x.shape());
+    for(size_t i=0; i<2; i++){
+        for(size_t j=0; j<2; j++){
+            cout<<x.at({i,j})<<" ";
+        }
+        cout<<endl;
+    }
     return 0;
 }

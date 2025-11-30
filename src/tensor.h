@@ -6,6 +6,7 @@
 #include<optional>
 #include<limits>
 #include<numeric>
+#include "nditerator.h"
 
 using namespace std;
 
@@ -49,6 +50,13 @@ class Tensor {
             basePtr = valvec.data();
         }
 
+        Tensor(vector<double> vec, vector<size_t> shape_list)
+            : shapes(shape_list), dim(shapes.size()), valvec(vec)
+        {
+            basePtr = valvec.data();
+            strides = computeStrides(shapes);
+        }
+
         Tensor(double* ptr, vector<size_t> shape_list, vector<size_t> strides)
             : basePtr(ptr), strides(strides), shapes(shape_list), dim(shapes.size()) {}
 
@@ -74,7 +82,6 @@ class Tensor {
                 smv[maxl-1-i] = src[nd-1-i];
             }
 
-            cout<<"YOU"<<endl;
             for(size_t i=0; i<maxl; i++)
                 if(!(smv[maxl-i-1] == trg[maxl-i-1] || smv[maxl-i-1] == 1 || trg[maxl-i-1] == 1)) throw "Shapes incompatible";
             return true;
@@ -193,26 +200,75 @@ class Tensor {
             return Tensor(basePtr, new_shape, new_stride);  
         }
 
-        //arithematic operations
+        //necessary arithematic operations for transformers
+
         Tensor operator+ (Tensor& t) {
-            Tensor max_tensor = t.ndim() >= dim ? t : *this;
-            Tensor s = singleton_rule(t);
-            vector<size_t> s_strides = s.get_strides();
+            Tensor a = t.ndim() >= dim ? t : *this;
+            Tensor b = singleton_rule(t);
+
             vector<size_t> ans_shape = broadcast_shape(t);
-            
+            vector<double> new_valvec(accumulate(ans_shape.begin(), ans_shape.end(), size_t{1}, multiplies<size_t>()));
+            size_t vidx = 0;
+            for(const auto& idx: NDRange(ans_shape)){
+                double left = a.at(idx), right = b.at(idx);
+                if(vidx < new_valvec.size()) new_valvec[vidx++] = left+right;
+            }
+
+            return Tensor(new_valvec, ans_shape);   
         }
         
-        // Tensor operator- (Tensor& t) {}
+        Tensor operator- (double val) {
+            vector<double> new_valvec(accumulate(shapes.begin(), shapes.end(), size_t{1}, multiplies<size_t>()));
+            size_t vidx = 0;
+            for(const auto& idx: NDRange(shapes)){
+                if(vidx < new_valvec.size()) new_valvec[vidx++] = at(idx)-val;
+            }
 
-        // Tensor operator* (Tensor& t) {}
+            return Tensor(new_valvec, shapes);  
+        }
 
-        // Tensor operator* (double val) {}
+        Tensor operator* (Tensor& t) {
+            Tensor a = t.ndim() >= dim ? t : *this;
+            Tensor b = singleton_rule(t);
 
-        // Tensor operator/ (Tensor& t) {} 
+            vector<size_t> ans_shape = broadcast_shape(t);
+            vector<double> new_valvec(accumulate(ans_shape.begin(), ans_shape.end(), size_t{1}, multiplies<size_t>()));
+            size_t vidx = 0;
+            for(const auto& idx: NDRange(ans_shape)){
+                double left = a.at(idx), right = b.at(idx);
+                if(vidx < new_valvec.size()) new_valvec[vidx++] = left*right;
+            }
 
-        // Tensor operator/ (Tensor& t) {}
+            return Tensor(new_valvec, ans_shape); 
+        }
+
+        Tensor operator* (double val) {
+            vector<double> new_valvec(accumulate(shapes.begin(), shapes.end(), size_t{1}, multiplies<size_t>()));
+            size_t vidx = 0;
+            for(const auto& idx: NDRange(shapes)){
+                if(vidx < new_valvec.size()) new_valvec[vidx++] = at(idx)*val;
+            }
+
+            return Tensor(new_valvec, shapes); 
+        }
+
+        Tensor operator/ (double val) {
+            vector<double> new_valvec(accumulate(shapes.begin(), shapes.end(), size_t{1}, multiplies<size_t>()));
+            size_t vidx = 0;
+            for(const auto& idx: NDRange(shapes)){
+                if(vidx < new_valvec.size()) new_valvec[vidx++] = at(idx)/val;
+            }
+
+            return Tensor(new_valvec, shapes); 
+        }
 
         //functional operations
+
+        // Tensor matmul(Tensor& t){}
+
+        // Tensor softmax(Tensor& t){}
+
+        // Tensor layerNorm(Tensor& t){}
 
         //test operations
         void show(){
