@@ -22,10 +22,10 @@ Implemented complete broadcasting rules: shape inference, leading/trailing singl
 **Day 6 — Transformer Arithematic Support**  
 Implemented arithematic methods that a transformer needs: Matrix addition, linear matrix multiplication, scalar matrix multiplication, scalar matrix division, scalar matrix subtraction.
 
-**Day 6 — Refactoring and Reductions**  
-Refactored the element-wise addition, subtraction, division and multiplication, also implemented the reduction across single axes logic - will apply it for sum, mean, min and min later. Also generalized broadcasting for each operation.
+**Day 7 — Refactoring and Reductions**  
+Refactored the element-wise addition, subtraction, division and multiplication, also implemented the reduction across single axes logic - will apply it for sum, mean, min and min later. Also generalized broadcasting for each operation. Also added parallelization to computation intensive operations
 
-**Day 7 - Broadcasting rules completion**
+**Day 8 - Broadcasting rules completion**
 
 ## Backtesting Engine
 
