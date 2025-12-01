@@ -4,10 +4,12 @@
 #include<iostream>
 #include<vector>
 #include<optional>
+#include<algorithm>
 #include<limits>
 #include<numeric>
 #include<omp.h>
 #include "nditerator.h"
+#include "reduceOps.h"
 
 using namespace std;
 
@@ -57,7 +59,7 @@ class Tensor {
         }
     protected:
         size_t jumpTo(vector<size_t> pos){
-            if(pos.size() != dim) throw "Invalid size";
+            if(pos.size() != dim) throw invalid_argument("Invalid size");
             size_t val_pos = 0;
             for(size_t i=0; i<dim; i++){
                 val_pos += strides[i] * pos[i];
@@ -106,7 +108,7 @@ class Tensor {
 
         bool empty() const { return (dim == 0 ? true : false); }
 
-        //broadcasting rules
+//region broadcasting rules
         bool shape_check(vector<size_t> t_shp){
             size_t tdim = t_shp.size();
             size_t maxl = max(tdim, dim);
@@ -196,7 +198,9 @@ class Tensor {
 // 4. Masked Fill - Replace values where condition is true
 // This fills positions in a tensor with a specified value wherever a mask is true (or non-zero).
 // Example: You have attention scores [batch, heads, seq_q, seq_k] and a mask of the same shape. Wherever the mask is 0 (masked position), you fill the attention score with -infinity. This ensures those positions get zero attention weight after softmax, effectively blocking the model from attending to future tokens or padding tokens.       
-        //access and modification
+//endregion broadcasting rules
+
+//region access and modification
         double at(vector<size_t> pos){
             size_t val_pos = jumpTo(pos);
             return basePtr[val_pos];
@@ -206,7 +210,9 @@ class Tensor {
             size_t idx = jumpTo(pos);
             if(idx < size()) basePtr[idx] = val;
         }
+//endregion access and modification
 
+//region data-viewing
         // referenced slicing -> the slice is still pointing to the same location as the og tensor
         Tensor slice(vector<size_t> start, vector<size_t> shape, const optional<vector<size_t>>& _strides = nullopt){
             vector<size_t> actualStrides = _strides.value_or(strides);
@@ -236,9 +242,10 @@ class Tensor {
 
             return Tensor(basePtr, new_shape, new_stride);  
         }
+//endregion data-viewing
 
         //necessary arithematic operations for transformers
-
+//region element-wise operations
         Tensor operator+ (Tensor& t) {
             return tensorOp(t, [](double a, double b){ return a+b; });
         }
@@ -270,6 +277,50 @@ class Tensor {
         Tensor operator/ (Tensor& t){
             return tensorOp(t, [](double a, double b){ return a/b; });
         }
+//endregion element-wise operations
+
+//region reductions
+        Tensor sum(const size_t axis){
+            if(axis >= dim) {
+                    throw invalid_argument("Invalid axis value");
+            }
+            vector<size_t> reduced_dim;
+            for(size_t i=0; i<dim; i++){
+                if(i != axis){
+                    reduced_dim.push_back(i);
+                }
+            }
+
+            vector<size_t> reduced_shape;
+            for(size_t i=0; i<reduced_dim.size(); i++){
+                reduced_shape.push_back(shapes[reduced_dim[i]]);
+            }
+
+            auto indices = NDRange(reduced_shape);
+            
+            vector<size_t> base_idx;
+            for(const auto& idx: NDRange(reduced_shape)){
+                size_t base = 0;
+                for(size_t i=0;i<reduced_dim.size(); i++){
+                    base += idx[i]*strides[reduced_dim[i]];
+                }
+                base_idx.push_back(base);
+            }
+
+            vector<double> result(base_idx.size());
+
+            #pragma omp parallel for
+            for(size_t i=0; i<base_idx.size(); i++){
+                double sum = 0;
+                for(size_t j=0; j<shapes[axis]; j++){
+                    sum += basePtr[base_idx[i] + strides[axis]*j];
+                }
+                result[i] = sum;
+            }
+            return Tensor(result, reduced_shape);
+        }
+
+//endregion reductions
 
         //functional operations
 
@@ -286,6 +337,13 @@ class Tensor {
         }
 
         void prnt(vector<size_t> x){
+            for(auto e: x){
+                cout<<e<<" ";
+            }
+            cout<<endl;
+        }
+
+        void prntd(vector<double> x){
             for(auto e: x){
                 cout<<e<<" ";
             }

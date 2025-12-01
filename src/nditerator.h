@@ -70,6 +70,11 @@ class NDRange {
         NDiterator end() {
             return NDiterator::end(shape);
         }
+
+        size_t size(){
+            size_t sz = accumulate(shape.begin(), shape.end(), size_t{1}, multiplies<size_t>());
+            return sz;
+        }
 };
 
 #endif
