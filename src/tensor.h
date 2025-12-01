@@ -6,6 +6,7 @@
 #include<optional>
 #include<limits>
 #include<numeric>
+#include<omp.h>
 #include "nditerator.h"
 
 using namespace std;
@@ -18,6 +19,42 @@ class Tensor {
         double* basePtr;
         size_t dim;
 
+        template<typename TensorOp>
+        Tensor tensorOp(Tensor& t, TensorOp op){
+            Tensor a = (t.ndim() > dim) ? singleton_rule(t) : *this;
+            Tensor b = (t.ndim() < dim) ? singleton_rule(t) : t;
+
+            vector<size_t> ans_shape = broadcast_shape(t);
+            size_t total_size = accumulate(ans_shape.begin(), ans_shape.end(), size_t{1}, multiplies<size_t>());
+            vector<double> new_valvec(total_size);
+            vector<vector<size_t>> indices;
+            for(const auto& idx: NDRange(ans_shape)){
+                indices.push_back(idx);
+            }
+            #pragma omp parallel for if(total_size> 10000)
+            for(size_t vidx=0; vidx<indices.size(); vidx++){
+                double left = a.at(indices[vidx]), right = b.at(indices[vidx]);
+                new_valvec[vidx] = op(left, right);
+            }
+
+            return Tensor(new_valvec, ans_shape);
+        }
+
+        template<typename TensorOp>
+        Tensor scalarOp(double val, TensorOp op){
+            size_t total_size = accumulate(shapes.begin(), shapes.end(), size_t{1}, multiplies<size_t>());
+            vector<double> new_valvec(total_size);
+            vector<vector<size_t>> indices;
+            for(const auto& idx: NDRange(shapes)){
+                indices.push_back(idx);
+            }
+            #pragma omp parallel for if(total_size>10000)
+            for(size_t vidx=0; vidx<total_size; vidx++){
+                new_valvec[vidx] = op(at(indices[vidx]), val);
+            }
+
+            return Tensor(new_valvec, shapes); 
+        }
     protected:
         size_t jumpTo(vector<size_t> pos){
             if(pos.size() != dim) throw "Invalid size";
@@ -203,63 +240,35 @@ class Tensor {
         //necessary arithematic operations for transformers
 
         Tensor operator+ (Tensor& t) {
-            Tensor a = t.ndim() >= dim ? t : *this;
-            Tensor b = singleton_rule(t);
-
-            vector<size_t> ans_shape = broadcast_shape(t);
-            vector<double> new_valvec(accumulate(ans_shape.begin(), ans_shape.end(), size_t{1}, multiplies<size_t>()));
-            size_t vidx = 0;
-            for(const auto& idx: NDRange(ans_shape)){
-                double left = a.at(idx), right = b.at(idx);
-                if(vidx < new_valvec.size()) new_valvec[vidx++] = left+right;
-            }
-
-            return Tensor(new_valvec, ans_shape);   
+            return tensorOp(t, [](double a, double b){ return a+b; });
         }
         
-        Tensor operator- (double val) {
-            vector<double> new_valvec(accumulate(shapes.begin(), shapes.end(), size_t{1}, multiplies<size_t>()));
-            size_t vidx = 0;
-            for(const auto& idx: NDRange(shapes)){
-                if(vidx < new_valvec.size()) new_valvec[vidx++] = at(idx)-val;
-            }
+        Tensor operator+ (double val){
+            return scalarOp(val, [](double a, double b){ return a+b; }); 
+        }
 
-            return Tensor(new_valvec, shapes);  
+        Tensor operator- (Tensor& t){
+            return tensorOp(t, [](double a, double b){ return a-b; });
+        }
+
+        Tensor operator- (double val) {
+            return scalarOp(val, [](double a, double b){ return a-b; });
         }
 
         Tensor operator* (Tensor& t) {
-            Tensor a = t.ndim() >= dim ? t : *this;
-            Tensor b = singleton_rule(t);
-
-            vector<size_t> ans_shape = broadcast_shape(t);
-            vector<double> new_valvec(accumulate(ans_shape.begin(), ans_shape.end(), size_t{1}, multiplies<size_t>()));
-            size_t vidx = 0;
-            for(const auto& idx: NDRange(ans_shape)){
-                double left = a.at(idx), right = b.at(idx);
-                if(vidx < new_valvec.size()) new_valvec[vidx++] = left*right;
-            }
-
-            return Tensor(new_valvec, ans_shape); 
+            return tensorOp(t, [](double a, double b){ return a*b; });
         }
 
         Tensor operator* (double val) {
-            vector<double> new_valvec(accumulate(shapes.begin(), shapes.end(), size_t{1}, multiplies<size_t>()));
-            size_t vidx = 0;
-            for(const auto& idx: NDRange(shapes)){
-                if(vidx < new_valvec.size()) new_valvec[vidx++] = at(idx)*val;
-            }
-
-            return Tensor(new_valvec, shapes); 
+             return scalarOp(val, [](double a, double b){ return a*b; });
         }
 
         Tensor operator/ (double val) {
-            vector<double> new_valvec(accumulate(shapes.begin(), shapes.end(), size_t{1}, multiplies<size_t>()));
-            size_t vidx = 0;
-            for(const auto& idx: NDRange(shapes)){
-                if(vidx < new_valvec.size()) new_valvec[vidx++] = at(idx)/val;
-            }
+            return scalarOp(val, [](double a, double b){ return a/b; });
+        }
 
-            return Tensor(new_valvec, shapes); 
+        Tensor operator/ (Tensor& t){
+            return tensorOp(t, [](double a, double b){ return a/b; });
         }
 
         //functional operations

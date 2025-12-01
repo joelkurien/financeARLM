@@ -5,8 +5,12 @@ project(financeARLM)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+find_package(OpenMP REQUIRED)
+
 # Include Eigen (adjust this path to where you put Eigen in WSL)
 include_directories("~/eigen/eigen-5.0.0")
 
 # Add executable
 add_executable(financeARLM src/main.cpp)
+
+target_link_libraries(financeARLM PRIVATE OpenMP::OpenMP_CXX)
