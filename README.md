@@ -25,7 +25,10 @@ Implemented arithematic methods that a transformer needs: Matrix addition, linea
 **Day 7 — Refactoring and Reductions**  
 Refactored the element-wise addition, subtraction, division and multiplication, also implemented the reduction across single axes logic - will apply it for sum, mean, min and min later. Also generalized broadcasting for each operation. Also added parallelization to computation intensive operations
 
-**Day 8 - Broadcasting rules completion**
+**Day 8 - Reductions and functional operations**
+Implemented the sum, mean and maximum finding along an axis, also completed the implementation of softmax along an axis and layernormalization along an axis with a parameterized gamma and beta values that can be passed and a fixed error variance value.
+
+**Day 9 - Matrix multiplication and broadcasting rules**
 
 ## Backtesting Engine
 
