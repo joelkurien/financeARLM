@@ -23,13 +23,20 @@ int main(){
         b.put({i,j, k}, d++);
     }
     Tensor x = a+b;
-    
-    Tensor y = x.maximum(1);
-    y.prnt(y.shape());
-    for(size_t i=0; i<2; i++){
-    //for(size_t j=0; j<3; j++){
+    for(size_t i=0; i<2; i++)
+    for(size_t j=0; j<3; j++){
         for(size_t k=0; k<4; k++){
-            cout<<y.at({i,k})<<" ";
+            cout<<x.at({i,j,k})<<" ";
+        }
+        cout<<endl;
+    }
+    cout<<endl;
+    Tensor y = x.layer_norm(1,1,1);
+    y.prnt(y.shape());
+    for(size_t i=0; i<2; i++)
+    for(size_t j=0; j<3; j++){
+        for(size_t k=0; k<4; k++){
+            cout<<y.at({i,j,k})<<" ";
         }
         cout<<endl;
     }

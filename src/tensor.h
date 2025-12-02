@@ -5,6 +5,7 @@
 #include<vector>
 #include<optional>
 #include<algorithm>
+#include<cmath>
 #include<limits>
 #include<numeric>
 #include<omp.h>
@@ -365,9 +366,61 @@ class Tensor {
 
         // Tensor matmul(Tensor& t){}
 
-        // Tensor softmax(Tensor& t){}
+        // Softmax function
+        Tensor softmax(const size_t axis){
+            auto [base_idx, reduced_shape] = axis_reduction(axis);
+            vector<double> result(size());
 
-        // Tensor layerNorm(Tensor& t){}
+            const size_t sax = shapes[axis];
+            const size_t stride = strides[axis];
+
+            #pragma omp parallel for
+            for(size_t i=0; i<base_idx.size(); i++){
+                double mx = -numeric_limits<double>::infinity();
+                for(size_t j=0; j<sax; j++){
+                    double val = basePtr[base_idx[i] + stride*j];
+                    mx = mx < val ? val : mx;
+                }
+                double denom = 0;
+                for(size_t j=0; j<sax; j++){
+                    denom += exp(basePtr[base_idx[i] + stride*j] - mx);
+                }
+                for(size_t j=0; j<sax; j++){
+                    size_t idx = base_idx[i] + stride*j;
+                    result[idx] = exp(basePtr[idx] - mx) / denom;
+                }
+            }
+            return Tensor(result, shapes);
+        }
+
+        // Layer Normalization
+        Tensor layer_norm(const size_t gamma, const size_t beta, const size_t axis){
+            auto [base_idx, reduced_shape] = axis_reduction(axis);
+            vector<double> result(size());
+
+            const size_t sax = shapes[axis];
+            const size_t stride = strides[axis];
+
+            #pragma omp parallel for
+            for(size_t i=0; i<base_idx.size(); i++){
+                double mu = 0, var = 0;
+                for(size_t j=0; j<sax; j++){
+                    mu += basePtr[base_idx[i] + stride*j];
+                }
+                mu /= sax;
+                for(size_t j=0; j<sax; j++){
+                    var += pow((basePtr[base_idx[i] + stride*j]-mu),2);
+                }
+                var /= sax;
+                double inv_std = 1.0 / sqrt(var + e)
+                for(size_t j=0; j<sax; j++){
+                    size_t idx = base_idx[i] + stride*j;
+                    double e = 1e-12;
+                    result[idx] = gamma * ((basePtr[idx] - mu) * inv_std ) + beta;
+                }
+            }
+            return Tensor(result, shapes);
+        }
 
         //test operations
         void show(){
