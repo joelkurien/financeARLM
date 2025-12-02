@@ -24,12 +24,12 @@ int main(){
     }
     Tensor x = a+b;
     
-    Tensor y = x.sum(1);
+    Tensor y = x.maximum(1);
     y.prnt(y.shape());
-    for(size_t i=0; i<2; i++)
-    for(size_t j=0; j<3; j++){
+    for(size_t i=0; i<2; i++){
+    //for(size_t j=0; j<3; j++){
         for(size_t k=0; k<4; k++){
-            cout<<x.at({i,j,k})<<" ";
+            cout<<y.at({i,k})<<" ";
         }
         cout<<endl;
     }

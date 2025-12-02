@@ -21,6 +21,7 @@ class Tensor {
         double* basePtr;
         size_t dim;
 
+        //generalized elementwise arithematic operations
         template<typename TensorOp>
         Tensor tensorOp(Tensor& t, TensorOp op){
             Tensor a = (t.ndim() > dim) ? singleton_rule(t) : *this;
@@ -33,6 +34,7 @@ class Tensor {
             for(const auto& idx: NDRange(ans_shape)){
                 indices.push_back(idx);
             }
+
             #pragma omp parallel for if(total_size> 10000)
             for(size_t vidx=0; vidx<indices.size(); vidx++){
                 double left = a.at(indices[vidx]), right = b.at(indices[vidx]);
@@ -42,6 +44,7 @@ class Tensor {
             return Tensor(new_valvec, ans_shape);
         }
 
+        //generalized scalar matrix operations;
         template<typename TensorOp>
         Tensor scalarOp(double val, TensorOp op){
             size_t total_size = accumulate(shapes.begin(), shapes.end(), size_t{1}, multiplies<size_t>());
@@ -50,6 +53,7 @@ class Tensor {
             for(const auto& idx: NDRange(shapes)){
                 indices.push_back(idx);
             }
+
             #pragma omp parallel for if(total_size>10000)
             for(size_t vidx=0; vidx<total_size; vidx++){
                 new_valvec[vidx] = op(at(indices[vidx]), val);
@@ -57,6 +61,37 @@ class Tensor {
 
             return Tensor(new_valvec, shapes); 
         }
+
+        //reduced axis shapes and vectors for reduction operations such as sum, mean and max along axes
+        tuple<vector<size_t>, vector<size_t>> axis_reduction(const size_t axis){
+            if(axis >= dim) {
+                    throw invalid_argument("Invalid axis value");
+            }
+            vector<size_t> reduced_dim;
+            for(size_t i=0; i<dim; i++){
+                if(i != axis){
+                    reduced_dim.push_back(i);
+                }
+            }
+
+            vector<size_t> reduced_shape;
+            for(size_t i=0; i<reduced_dim.size(); i++){
+                reduced_shape.push_back(shapes[reduced_dim[i]]);
+            }
+
+            auto indices = NDRange(reduced_shape);
+            
+            vector<size_t> base_idx;
+            for(const auto& idx: NDRange(reduced_shape)){
+                size_t base = 0;
+                for(size_t i=0;i<reduced_dim.size(); i++){
+                    base += idx[i]*strides[reduced_dim[i]];
+                }
+                base_idx.push_back(base);
+            }
+            return {base_idx, reduced_shape};
+        }
+
     protected:
         size_t jumpTo(vector<size_t> pos){
             if(pos.size() != dim) throw invalid_argument("Invalid size");
@@ -122,7 +157,7 @@ class Tensor {
             }
 
             for(size_t i=0; i<maxl; i++)
-                if(!(smv[maxl-i-1] == trg[maxl-i-1] || smv[maxl-i-1] == 1 || trg[maxl-i-1] == 1)) throw "Shapes incompatible";
+                if(!(smv[maxl-i-1] == trg[maxl-i-1] || smv[maxl-i-1] == 1 || trg[maxl-i-1] == 1)) throw runtime_error("Shapes incompatible");
             return true;
         }
 
@@ -182,7 +217,7 @@ class Tensor {
             vector<size_t> new_strides = strides;
             if(shape_check(target)){
                 for(size_t i=0; i<target.size(); i++){
-                    if(shapes[i] > target[i]) throw "Target shape should be greater";
+                    if(shapes[i] > target[i]) throw runtime_error("Target shape should be greater");
                     if(shapes[i] == 1 && target[i] == 1) continue;
                     if(shapes[i] == 1) new_strides[i] = 0;
                 }
@@ -244,7 +279,6 @@ class Tensor {
         }
 //endregion data-viewing
 
-        //necessary arithematic operations for transformers
 //region element-wise operations
         Tensor operator+ (Tensor& t) {
             return tensorOp(t, [](double a, double b){ return a+b; });
@@ -281,32 +315,7 @@ class Tensor {
 
 //region reductions
         Tensor sum(const size_t axis){
-            if(axis >= dim) {
-                    throw invalid_argument("Invalid axis value");
-            }
-            vector<size_t> reduced_dim;
-            for(size_t i=0; i<dim; i++){
-                if(i != axis){
-                    reduced_dim.push_back(i);
-                }
-            }
-
-            vector<size_t> reduced_shape;
-            for(size_t i=0; i<reduced_dim.size(); i++){
-                reduced_shape.push_back(shapes[reduced_dim[i]]);
-            }
-
-            auto indices = NDRange(reduced_shape);
-            
-            vector<size_t> base_idx;
-            for(const auto& idx: NDRange(reduced_shape)){
-                size_t base = 0;
-                for(size_t i=0;i<reduced_dim.size(); i++){
-                    base += idx[i]*strides[reduced_dim[i]];
-                }
-                base_idx.push_back(base);
-            }
-
+            auto [base_idx, reduced_shape] = axis_reduction(axis);
             vector<double> result(base_idx.size());
 
             #pragma omp parallel for
@@ -320,6 +329,36 @@ class Tensor {
             return Tensor(result, reduced_shape);
         }
 
+        Tensor mean(const size_t axis){
+            auto [base_idx, reduced_shape] = axis_reduction(axis);
+            vector<double> result(base_idx.size());
+
+            #pragma omp parallel for
+            for(size_t i=0; i<base_idx.size(); i++){
+                double sum = 0;
+                for(size_t j=0; j<shapes[axis]; j++){
+                    sum += basePtr[base_idx[i] + strides[axis]*j];
+                }
+                result[i] = sum/shapes[axis];
+            }
+            return Tensor(result, reduced_shape);
+        }
+
+        Tensor maximum(const size_t axis){
+            auto [base_idx, reduced_shape] = axis_reduction(axis);
+            vector<double> result(base_idx.size());
+
+            #pragma omp parallel for
+            for(size_t i=0; i<base_idx.size(); i++){
+                double mx = -numeric_limits<double>::infinity();
+                for(size_t j=0; j<shapes[axis]; j++){
+                    double val = basePtr[base_idx[i] + strides[axis]*j];
+                    mx = mx < val ? val : mx;
+                }
+                result[i] = mx;
+            }
+            return Tensor(result, reduced_shape);
+        }
 //endregion reductions
 
         //functional operations
