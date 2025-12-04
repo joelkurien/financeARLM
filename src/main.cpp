@@ -3,43 +3,41 @@
 #include <vector>
 #include "tensor.h"
 #include "nditerator.h"
+#include "MatrixMultiply.h"
 
 using namespace std;
 using namespace Eigen;
 
 int main(){
-    Tensor a({3,4});
-    Tensor b({2,3,4});
-    double c = 0;
-    for(size_t i=0; i<3; i++){
+    Tensor a({2,3,4});
+    Tensor b({4,6});
+    size_t c = 0;
+    for(size_t i=0; i<2; i++){
+        for(size_t j=0; j<3; j++){
+            for(size_t k=0; k<4; k++){
+                ++c;
+                   a.put({i,j,k}, c);
+            }
+        }
+    }
+
+    c = 0;
+    //for(size_t i=0; i<2; i++){
         for(size_t j=0; j<4; j++){
-                a.put({i,j}, c++);
+            for(size_t k=0; k<6; k++){
+                ++c;
+                b.put({j,k}, c);
+            }
         }
-    }
-    double d = 0;
-    for(size_t i=0; i<2; i++)
-    for(size_t j=0; j<3; j++)
-    for(size_t k=0; k<4; k++){
-        b.put({i,j, k}, d++);
-    }
-    Tensor x = a+b;
-    for(size_t i=0; i<2; i++)
-    for(size_t j=0; j<3; j++){
-        for(size_t k=0; k<4; k++){
-            cout<<x.at({i,j,k})<<" ";
-        }
-        cout<<endl;
-    }
+    //}
+
+    a.show();
     cout<<endl;
-    Tensor y = x.layer_norm(1,1,1);
-    y.prnt(y.shape());
-    for(size_t i=0; i<2; i++)
-    for(size_t j=0; j<3; j++){
-        for(size_t k=0; k<4; k++){
-            cout<<y.at({i,j,k})<<" ";
-        }
-        cout<<endl;
-    }
-    // cout<<a.shape_check(b.shape())<<endl;
+    b.show();
+    cout<<endl;
+    Tensor d = MatrixMul::matmul(a,b);
+    d.prnt(d.shape());
+    d.show();
+    cout<<endl;
     return 0;
 }

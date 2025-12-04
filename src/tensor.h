@@ -9,8 +9,8 @@
 #include<limits>
 #include<numeric>
 #include<omp.h>
+#include<cblas.h>
 #include "nditerator.h"
-#include "reduceOps.h"
 
 using namespace std;
 
@@ -118,6 +118,7 @@ class Tensor {
 
         Tensor(vector<size_t> shape_list)
         {
+            if(shape_list.size() < 2) throw invalid_argument("Vector shape should have at least 2 dimensions");
             shapes = shape_list;
             dim = shapes.size();
             strides = computeStrides(shapes);
@@ -136,6 +137,9 @@ class Tensor {
             : basePtr(ptr), strides(strides), shapes(shape_list), dim(shapes.size()) {}
 
         double* data() { return basePtr; }
+        const double* data() const { return basePtr; }
+
+        vector<double> as_vector() { return valvec; }
         size_t ndim() const { return dim; }
         vector<size_t> get_strides() const { return strides; }    
         vector<size_t> shape() const { return shapes; }
@@ -364,8 +368,6 @@ class Tensor {
 
         //functional operations
 
-        // Tensor matmul(Tensor& t){}
-
         // Softmax function
         Tensor softmax(const size_t axis){
             auto [base_idx, reduced_shape] = axis_reduction(axis);
@@ -412,10 +414,10 @@ class Tensor {
                     var += pow((basePtr[base_idx[i] + stride*j]-mu),2);
                 }
                 var /= sax;
-                double inv_std = 1.0 / sqrt(var + e)
+                double e = 1e-12;
+                double inv_std = 1.0 / sqrt(var + e);
                 for(size_t j=0; j<sax; j++){
                     size_t idx = base_idx[i] + stride*j;
-                    double e = 1e-12;
                     result[idx] = gamma * ((basePtr[idx] - mu) * inv_std ) + beta;
                 }
             }
