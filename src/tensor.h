@@ -83,7 +83,7 @@ class Tensor {
             auto indices = NDRange(reduced_shape);
             
             vector<size_t> base_idx;
-            for(const auto& idx: NDRange(reduced_shape)){
+            for(const auto& idx: indices){
                 size_t base = 0;
                 for(size_t i=0;i<reduced_dim.size(); i++){
                     base += idx[i]*strides[reduced_dim[i]];
@@ -230,15 +230,80 @@ class Tensor {
             return Tensor(basePtr, target, new_strides);
         }
 
+        Tensor concatenate(Tensor& b, const size_t axis){
+            if(dim != b.ndim()) throw invalid_argument("Tensor dimension mismatch");
+            if(axis >= dim) throw invalid_argument("Axis is invalid");
+            vector<size_t> new_shape(dim,0);
+            for(int i=0; i<dim; i++){
+                if(i != axis && shapes[i] != b.shapes[i]){
+                    throw invalid_argument("Tensor non-target axis value mismatch");
+                } 
+                new_shape[i] = (i == axis) ? shapes[axis]+b.shapes[axis] : shapes[i];
+            }
 
-//         3. Concatenate - Join tensors along an axis
-// This combines multiple tensors along an existing dimension.
-// Example: In multi-head attention, each head produces output [batch, seq_len, head_dim]. You have 8 heads, so you concatenate them along the last dimension to get [batch, seq_len, 8*head_dim] which equals [batch, seq_len, d_model]. This is also critical for KV caching during generation where you concatenate new keys/values with previously cached ones along the sequence dimension.
+            Tensor conc(new_shape);
 
+            size_t left_size = 1;
+            for(size_t i=0; i<axis; i++)
+                left_size *= shapes[i];
+            
+            size_t a_size = 1;
+            for(size_t i = axis; i<dim; i++){
+                a_size *= shapes[i];
+            }
+
+            size_t b_size = 1;
+            for(size_t i = axis; i<dim; i++){
+                b_size *= b.shapes[i];
+            }
+
+            size_t conc_idx = 0;
+            for(size_t c_idx = 0; c_idx < left_size; c_idx++){
+                size_t a_lft = c_idx*a_size;
+                size_t b_lft = c_idx*b_size;
+
+                copy(valvec.begin()+a_lft, valvec.begin() + a_lft + a_size, conc.valvec.begin()+conc_idx);
+                conc_idx += a_size;
+
+                copy(valvec.begin()+b_lft, valvec.begin()+b_lft+b_size, conc.valvec.begin()+conc_idx);
+                conc_idx += b_size;
+            }
+            // vector<size_t> left (shapes.begin(), shapes.begin()+axis);
+
+            // vector<size_t> r1 (shapes.begin()+axis, shapes.end());
+            // vector<size_t> r2 (b.shapes.begin()+axis, b.shapes.end());
+            // auto l_indices = NDRange(left);
+            // auto a_indices = NDRange(r1);
+            // auto b_indices = NDRange(r2);
+
+            // Tensor conc (new_shape);
+            // size_t index = 0;
+            // for(const vector<size_t>& l_idx: l_indices){
+            //     vector<size_t> pos (dim, 0);
+
+            //     for(size_t i=0; i<l_idx.size(); i++){
+            //         pos[i] = l_idx[i];
+            //     }
+            //     for(const vector<size_t>& idx: a_indices){
+            //         for(size_t x=0; x<idx.size(); x++){
+            //             pos[axis+x] = idx[x];
+            //         }
+            //         conc.valvec[index++] = at(pos);
+            //     }
+            //     for(const vector<size_t>& idx: b_indices){
+            //         for(size_t x=0; x<idx.size(); x++){
+            //             pos[axis+x] = idx[x];
+            //         }
+            //         conc.valvec[index++] = b.at(pos);
+            //     }
+            // }
+            return conc;
+        }
 // 4. Masked Fill - Replace values where condition is true
 // This fills positions in a tensor with a specified value wherever a mask is true (or non-zero).
 // Example: You have attention scores [batch, heads, seq_q, seq_k] and a mask of the same shape. Wherever the mask is 0 (masked position), you fill the attention score with -infinity. This ensures those positions get zero attention weight after softmax, effectively blocking the model from attending to future tokens or padding tokens.       
 //endregion broadcasting rules
+        //Tensor mask_filled(Tensor& a){}
 
 //region access and modification
         double at(vector<size_t> pos){
