@@ -19,8 +19,8 @@ class MatrixMul {
         const double beta = 0;
 
         Tensor batch_multiplication(const Tensor& a, const Tensor& b){
-            vector<size_t> a_shape = a.shape();
-            vector<size_t> b_shape = b.shape();
+            std::vector<size_t> a_shape = a.shape();
+            std::vector<size_t> b_shape = b.shape();
 
             if(a_shape[0] != b_shape[0]) throw invalid_argument("Batch size mismatch");
 
@@ -46,8 +46,8 @@ class MatrixMul {
         }
 
         Tensor single_multiplication(const Tensor& a, const Tensor& b){
-            vector<size_t> a_shape = a.shape();
-            vector<size_t> b_shape = b.shape();
+            std::vector<size_t> a_shape = a.shape();
+            std::vector<size_t> b_shape = b.shape();
 
             int M = static_cast<int>(a_shape[0]);
             int K = static_cast<int>(a_shape[1]);
@@ -60,8 +60,8 @@ class MatrixMul {
         }
 
         Tensor broadcast_multiplication(const Tensor& a, const Tensor& b){
-            vector<size_t> a_shape = a.shape();
-            vector<size_t> b_shape = b.shape();
+            std::vector<size_t> a_shape = a.shape();
+            std::vector<size_t> b_shape = b.shape();
             
             size_t B = a_shape[0];
             int M = static_cast<int>(a_shape[1]);
@@ -85,13 +85,13 @@ class MatrixMul {
     public:
         static Tensor matmul(Tensor a, Tensor b){
             Tensor c;
-            const vector<size_t> shape_a = a.shape();
-            const vector<size_t> shape_b = b.shape();
+            const std::vector<size_t> shape_a = a.shape();
+            const std::vector<size_t> shape_b = b.shape();
 
             MatrixMul mul;
             if(a.ndim() >= 3 && b.ndim() >= 3){
-                vector<size_t> a_shape = {0,shape_a[a.ndim()-2], shape_a[a.ndim()-1]};
-                vector<size_t> b_shape= {0,shape_b[b.ndim()-2], shape_b[b.ndim()-1]};
+                std::vector<size_t> a_shape = {0,shape_a[a.ndim()-2], shape_a[a.ndim()-1]};
+                std::vector<size_t> b_shape= {0,shape_b[b.ndim()-2], shape_b[b.ndim()-1]};
 
                 a_shape[0] = accumulate(shape_a.begin(), shape_a.end()-2, size_t{1}, multiplies<size_t>());
                 a.reshape(a_shape);
@@ -113,7 +113,7 @@ class MatrixMul {
                 c = mul.single_multiplication(a,b);
             }
             else if(a.ndim() >=3 && b.ndim() == 2){
-                vector<size_t> a_shape = {0,shape_a[a.ndim()-2], shape_a[a.ndim()-1]};
+                std::vector<size_t> a_shape = {0,shape_a[a.ndim()-2], shape_a[a.ndim()-1]};
                 a_shape[0] = accumulate(shape_a.begin(), shape_a.end()-2, size_t{1}, multiplies<size_t>());
                 a.reshape(a_shape);
                 if(a_shape[2] != shape_b[0]) {

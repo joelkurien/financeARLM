@@ -40,7 +40,7 @@ int main(){
     // for(auto& idx: indices){
     //     cout<<idx[0]<<endl;
     // }
-
+    
     // a.show();
     // cout<<endl;
     // b.show();

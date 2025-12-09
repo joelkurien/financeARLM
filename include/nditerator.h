@@ -8,12 +8,12 @@ using namespace std;
 
 class NDiterator{
     private:
-        vector<size_t> shape;
-        vector<size_t> current_shape;
+        std::vector<size_t> shape;
+        std::vector<size_t> current_shape;
         bool is_end;
 
     public:
-        NDiterator(const vector<size_t>& _shape, bool end = false)
+        NDiterator(const std::vector<size_t>& _shape, bool end = false)
             : shape(_shape), current_shape(shape.size(), 0), is_end(end)
         {
             if(!end){
@@ -26,7 +26,7 @@ class NDiterator{
             }
         }
 
-        const vector<size_t>& operator*() const { return current_shape; }
+        const std::vector<size_t>& operator*() const { return current_shape; }
         NDiterator& operator++(){
             size_t carry = 1;
             size_t n = current_shape.size();
@@ -48,20 +48,20 @@ class NDiterator{
             return current_shape != iter.current_shape;
         }
 
-        static NDiterator begin(const vector<size_t>& shape){
+        static NDiterator begin(const std::vector<size_t>& shape){
             return NDiterator(shape, false);
         }
 
-        static NDiterator end(const vector<size_t>& shape){
+        static NDiterator end(const std::vector<size_t>& shape){
             return NDiterator(shape, true);
         }
 };
 
 class NDRange {
     private:
-        vector<size_t> shape;
+        std::vector<size_t> shape;
     public:
-        NDRange(vector<size_t>& _shape) : shape(_shape) {}
+        NDRange(std::vector<size_t>& _shape) : shape(_shape) {}
 
         NDiterator begin() {
             return NDiterator::begin(shape);
