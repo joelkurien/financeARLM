@@ -299,11 +299,16 @@ class Tensor {
             // }
             return conc;
         }
-// 4. Masked Fill - Replace values where condition is true
-// This fills positions in a tensor with a specified value wherever a mask is true (or non-zero).
-// Example: You have attention scores [batch, heads, seq_q, seq_k] and a mask of the same shape. Wherever the mask is 0 (masked position), you fill the attention score with -infinity. This ensures those positions get zero attention weight after softmax, effectively blocking the model from attending to future tokens or padding tokens.       
-//endregion broadcasting rules
-        //Tensor mask_filled(Tensor& a){}
+
+        Tensor mask_filled(vector<bool> mask, double replace){
+            if(mask.size() != size()) throw invalid_argument("Mask/Matrix size mismatch");
+            vector<double> n_vec;
+            n_vec.reserve(size());
+            for(int i=0; i<size(); i++){
+                n_vec.push_back(mask[i] ? replace : valvec[i]);
+            }
+            return Tensor(n_vec, shapes);
+        }
 
 //region access and modification
         double at(vector<size_t> pos){

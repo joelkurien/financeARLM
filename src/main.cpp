@@ -58,5 +58,13 @@ int main(){
     d.prnt(d.shape());
     d.show();
     cout<<endl;
+    vector<bool> mask(36, false);
+    for(size_t i = 0; i < 36; i++) {
+        mask[i] = (static_cast<int>(a.as_vector()[i]) % 2 == 1);  // true for odd numbers
+    }
+
+    // Apply mask - replace all odd numbers with 0
+    Tensor result = a.mask_filled(mask, 0.0);
+    result.prntd(result.as_vector());
     return 0;
 }
