@@ -28,7 +28,7 @@ Refactored the element-wise addition, subtraction, division and multiplication, 
 **Day 8 - Reductions and functional operations**
 Implemented the sum, mean and maximum finding along an axis, also completed the implementation of softmax along an axis and layernormalization along an axis with a parameterized gamma and beta values that can be passed and a fixed error variance value.
 
-**Day 9 - Matrix multiplication and broadcasting rules
+**Day 9 - Matrix multiplication and broadcasting rules**
 Implemented matrix multiplication using BLAS library because it was too complex and time consuming. I had to refer multiple sources on how to handle concurrency and control GPU/CPU performance so that I dont burn out my CPU, but failed miserably so I just resorted to using BLAS because I am lazy af.
 
 **Day 10 - Broadcasting rules**
