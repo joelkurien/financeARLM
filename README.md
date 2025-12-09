@@ -34,6 +34,8 @@ Implemented matrix multiplication using BLAS library because it was too complex 
 **Day 10 - Broadcasting rules**
 Completed all required broadcasting rules that are necessary to build a transformer/basic feedforward network. Further implemented the Relu and Gelu functions as well. We have completed all the necessary functions required by a tensor library to build transformers and neural networks. Fucking hell!!!! I fucking hate C++ but have to do it if I want to get a good career somewhere. 
 
+## Autograd Library (C++)
+
 ## Backtesting Engine
 
 Designed and implemented the foundation of a custom backtesting engine intended for seamless integration with the ARLM, enabling direct evaluation of strategy outputs generated from financial text analysis.
