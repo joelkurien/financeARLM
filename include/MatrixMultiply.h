@@ -7,8 +7,6 @@
 #include<cblas.h>
 #include "tensor.h"
 
-using namespace std;
-
 class MatrixMul {
     private: 
         const CBLAS_LAYOUT layout = CblasRowMajor;

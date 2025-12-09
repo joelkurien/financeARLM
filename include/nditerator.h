@@ -4,8 +4,6 @@
 #include<iostream>
 #include<vector>
 
-using namespace std;
-
 class NDiterator{
     private:
         std::vector<size_t> shape;
