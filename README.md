@@ -32,6 +32,7 @@ Implemented the sum, mean and maximum finding along an axis, also completed the 
 Implemented matrix multiplication using BLAS library because it was too complex and time consuming. I had to refer multiple sources on how to handle concurrency and control GPU/CPU performance so that I dont burn out my CPU, but failed miserably so I just resorted to using BLAS because I am lazy af.
 
 **Day 10 - Broadcasting rules**
+Completed all required broadcasting rules that are necessary to build a transformer/basic feedforward network. We have completed all the necessary functions required by a tensor library to build transformers and neural networks. Fucking hell!!!! I fucking hate C++ but have to do it if I want to get a good career somewhere. 
 
 ## Backtesting Engine
 
