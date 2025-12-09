@@ -28,7 +28,7 @@ class Tensor {
             Tensor b = (t.ndim() < dim) ? singleton_rule(t) : t;
 
             std::vector<size_t> ans_shape = broadcast_shape(t);
-            size_t total_size = accumulate(ans_shape.begin(), ans_shape.end(), size_t{1}, multiplies<size_t>());
+            size_t total_size = std::accumulate(ans_shape.begin(), ans_shape.end(), size_t{1}, std::multiplies<size_t>());
             std::vector<double> new_valvec(total_size);
             std::vector<std::vector<size_t>> indices;
             for(const auto& idx: NDRange(ans_shape)){
@@ -47,7 +47,7 @@ class Tensor {
         //generalized scalar matrix operations;
         template<typename TensorOp>
         Tensor scalarOp(double val, TensorOp op){
-            size_t total_size = accumulate(shapes.begin(), shapes.end(), size_t{1}, multiplies<size_t>());
+            size_t total_size = std::accumulate(shapes.begin(), shapes.end(), size_t{1}, std::multiplies<size_t>());
             std::vector<double> new_valvec(total_size);
             std::vector<std::vector<size_t>> indices;
             for(const auto& idx: NDRange(shapes)){
@@ -63,9 +63,9 @@ class Tensor {
         }
 
         //reduced axis shapes and vectors for reduction operations such as sum, mean and max along axes
-        tuple<std::vector<size_t>, std::vector<size_t>> axis_reduction(const size_t axis){
+        std::tuple<std::vector<size_t>, std::vector<size_t>> axis_reduction(const size_t axis){
             if(axis >= dim) {
-                    throw invalid_argument("Invalid axis value");
+                    throw std::invalid_argument("Invalid axis value");
             }
             std::vector<size_t> reduced_dim;
             for(size_t i=0; i<dim; i++){
@@ -94,7 +94,7 @@ class Tensor {
 
     protected:
         size_t jumpTo(std::vector<size_t> pos){
-            if(pos.size() != dim) throw invalid_argument("Invalid size");
+            if(pos.size() != dim) throw std::invalid_argument("Invalid size");
             size_t val_pos = 0;
             for(size_t i=0; i<dim; i++){
                 val_pos += strides[i] * pos[i];
@@ -117,7 +117,7 @@ class Tensor {
 
         Tensor(std::vector<size_t> shape_list)
         {
-            if(shape_list.size() < 2) throw invalid_argument("Vector shape should have at least 2 dimensions");
+            if(shape_list.size() < 2) throw std::invalid_argument("Vector shape should have at least 2 dimensions");
             shapes = shape_list;
             dim = shapes.size();
             strides = computeStrides(shapes);
@@ -143,14 +143,14 @@ class Tensor {
         std::vector<size_t> get_strides() const { return strides; }    
         std::vector<size_t> shape() const { return shapes; }
 
-        size_t size() const { return accumulate(shapes.begin(), shapes.end(), size_t{1}, multiplies<size_t>()); }
+        size_t size() const { return std::accumulate(shapes.begin(), shapes.end(), size_t{1}, std::multiplies<size_t>()); }
 
         bool empty() const { return (dim == 0 ? true : false); }
 
 //region broadcasting rules
         bool shape_check(std::vector<size_t> t_shp){
             size_t tdim = t_shp.size();
-            size_t maxl = max(tdim, dim);
+            size_t maxl = std::max(tdim, dim);
 
             std::vector<size_t> smv(maxl,1);
             const auto& src = tdim >= dim ? shapes : t_shp;
@@ -161,14 +161,14 @@ class Tensor {
             }
 
             for(size_t i=0; i<maxl; i++)
-                if(!(smv[maxl-i-1] == trg[maxl-i-1] || smv[maxl-i-1] == 1 || trg[maxl-i-1] == 1)) throw runtime_error("Shapes incompatible");
+                if(!(smv[maxl-i-1] == trg[maxl-i-1] || smv[maxl-i-1] == 1 || trg[maxl-i-1] == 1)) throw std::runtime_error("Shapes incompatible");
             return true;
         }
 
         std::vector<size_t> broadcast_shape(Tensor& t){
             if(!shape_check(t.shape())) {}
             std::vector<size_t> fnl_shape;
-            size_t maxl = max(t.ndim(), dim);
+            size_t maxl = std::max(t.ndim(), dim);
 
             std::vector<size_t>smv(maxl,1);
             const auto& src = t.ndim() >= dim ? shapes : t.shape();
@@ -179,7 +179,7 @@ class Tensor {
             }
 
             for(size_t i=0; i<maxl; i++)
-                smv[maxl-i-1] = max(smv[maxl-i-1], trg[maxl-i-1]); 
+                smv[maxl-i-1] = std::max(smv[maxl-i-1], trg[maxl-i-1]); 
             fnl_shape = smv;  
             return fnl_shape;
         }
@@ -187,7 +187,7 @@ class Tensor {
         Tensor singleton_rule(Tensor& t){
             if(!shape_check(t.shape())) {}
             std::vector<size_t> fnl_shape;
-            size_t maxl = max(t.ndim(), dim);
+            size_t maxl = std::max(t.ndim(), dim);
 
             std::vector<size_t>smv(maxl,1);
             const auto& src = t.ndim() >= dim ? shapes : t.shape();
@@ -221,7 +221,7 @@ class Tensor {
             std::vector<size_t> new_strides = strides;
             if(shape_check(target)){
                 for(size_t i=0; i<target.size(); i++){
-                    if(shapes[i] > target[i]) throw runtime_error("Target shape should be greater");
+                    if(shapes[i] > target[i]) throw std::runtime_error("Target shape should be greater");
                     if(shapes[i] == 1 && target[i] == 1) continue;
                     if(shapes[i] == 1) new_strides[i] = 0;
                 }
@@ -230,12 +230,12 @@ class Tensor {
         }
 
         Tensor concatenate(Tensor& b, const size_t axis){
-            if(dim != b.ndim()) throw invalid_argument("Tensor dimension mismatch");
-            if(axis >= dim) throw invalid_argument("Axis is invalid");
+            if(dim != b.ndim()) throw std::invalid_argument("Tensor dimension mismatch");
+            if(axis >= dim) throw std::invalid_argument("Axis is invalid");
             std::vector<size_t> new_shape(dim,0);
             for(int i=0; i<dim; i++){
                 if(i != axis && shapes[i] != b.shapes[i]){
-                    throw invalid_argument("Tensor non-target axis value mismatch");
+                    throw std::invalid_argument("Tensor non-target axis value mismatch");
                 } 
                 new_shape[i] = (i == axis) ? shapes[axis]+b.shapes[axis] : shapes[i];
             }
@@ -261,10 +261,10 @@ class Tensor {
                 size_t a_lft = c_idx*a_size;
                 size_t b_lft = c_idx*b_size;
 
-                copy(valvec.begin()+a_lft, valvec.begin() + a_lft + a_size, conc.valvec.begin()+conc_idx);
+                std::copy(valvec.begin()+a_lft, valvec.begin() + a_lft + a_size, conc.valvec.begin()+conc_idx);
                 conc_idx += a_size;
 
-                copy(valvec.begin()+b_lft, valvec.begin()+b_lft+b_size, conc.valvec.begin()+conc_idx);
+                std::copy(valvec.begin()+b_lft, valvec.begin()+b_lft+b_size, conc.valvec.begin()+conc_idx);
                 conc_idx += b_size;
             }
             // vector<size_t> left (shapes.begin(), shapes.begin()+axis);
@@ -300,7 +300,7 @@ class Tensor {
         }
 
         Tensor mask_filled(std::vector<bool> mask, double replace){
-            if(mask.size() != size()) throw invalid_argument("Mask/Matrix size mismatch");
+            if(mask.size() != size()) throw std::invalid_argument("Mask/Matrix size mismatch");
             std::vector<double> n_vec;
             n_vec.reserve(size());
             for(int i=0; i<size(); i++){
@@ -323,30 +323,30 @@ class Tensor {
 
 //region data-viewing
         // referenced slicing -> the slice is still pointing to the same location as the og tensor
-        Tensor slice(std::vector<size_t> start, std::vector<size_t> shape, const optional<std::vector<size_t>>& _strides = nullopt){
+        Tensor slice(std::vector<size_t> start, std::vector<size_t> shape, const std::optional<std::vector<size_t>>& _strides = std::nullopt){
             std::vector<size_t> actualStrides = _strides.value_or(strides);
             double* subBasePtr = basePtr + jumpTo(start);
             return Tensor(subBasePtr, shape, actualStrides);
         }
 
         Tensor reshape(std::vector<size_t> new_shape){
-            size_t p = accumulate(new_shape.begin(), new_shape.end(), size_t{1}, multiplies<size_t>());
+            size_t p = std::accumulate(new_shape.begin(), new_shape.end(), size_t{1}, std::multiplies<size_t>());
             if(size() != p) return Tensor();
             std::vector<size_t> new_strides = computeStrides(new_shape);
             return Tensor(basePtr, new_shape, new_strides);
         }
 
-        Tensor permute(const optional<std::vector<size_t>>& rotaxis = nullopt) {
+        Tensor permute(const std::optional<std::vector<size_t>>& rotaxis = std::nullopt) {
             std::vector<size_t> new_stride = strides;
             std::vector<size_t> new_shape = shapes;
-            if(rotaxis != nullopt && rotaxis->size() == dim){
+            if(rotaxis != std::nullopt && rotaxis->size() == dim){
                 for(size_t i=0; i<dim; i++){
                     new_stride[i] = strides[rotaxis->at(i)];
                     new_shape[i] = shapes[rotaxis->at(i)];
                 }
             } else {
-                reverse(new_stride.begin(), new_stride.end());
-                reverse(new_shape.begin(), new_shape.end());
+                std::reverse(new_stride.begin(), new_stride.end());
+                std::reverse(new_shape.begin(), new_shape.end());
             }
 
             return Tensor(basePtr, new_shape, new_stride);  
@@ -424,7 +424,7 @@ class Tensor {
 
             #pragma omp parallel for
             for(size_t i=0; i<base_idx.size(); i++){
-                double mx = -numeric_limits<double>::infinity();
+                double mx = -std::numeric_limits<double>::infinity();
                 for(size_t j=0; j<shapes[axis]; j++){
                     double val = basePtr[base_idx[i] + strides[axis]*j];
                     mx = mx < val ? val : mx;
@@ -447,7 +447,7 @@ class Tensor {
 
             #pragma omp parallel for
             for(size_t i=0; i<base_idx.size(); i++){
-                double mx = -numeric_limits<double>::infinity();
+                double mx = -std::numeric_limits<double>::infinity();
                 for(size_t j=0; j<sax; j++){
                     double val = basePtr[base_idx[i] + stride*j];
                     mx = mx < val ? val : mx;
@@ -498,7 +498,7 @@ class Tensor {
             res.reserve(size());
 
             for(int i=0; i<size(); i++){
-                res.push_back(max(valvec[i], 0.0));
+                res.push_back(std::max(valvec[i], 0.0));
             }
 
             return Tensor(res, shapes);
@@ -508,7 +508,7 @@ class Tensor {
             std::vector<double> res;
             res.reserve(size());
 
-            const double constant = sqrt(2.0 / numbers::pi);
+            const double constant = sqrt(2.0 / std::numbers::pi);
             for(int i=0; i<size(); i++){
                 double x = valvec[i];
                 double cube = x*x*x;
@@ -537,7 +537,7 @@ class Tensor {
             for(auto e: x){
                 std::cout<<e<<" ";
             }
-            std::cout<<endl;
+            std::cout<<std::endl;
         }
 };
 

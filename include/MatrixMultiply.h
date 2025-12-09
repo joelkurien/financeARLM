@@ -20,7 +20,7 @@ class MatrixMul {
             std::vector<size_t> a_shape = a.shape();
             std::vector<size_t> b_shape = b.shape();
 
-            if(a_shape[0] != b_shape[0]) throw invalid_argument("Batch size mismatch");
+            if(a_shape[0] != b_shape[0]) throw std::invalid_argument("Batch size mismatch");
 
             size_t B = a_shape[0];
             int M = static_cast<int>(a_shape[1]);
@@ -91,14 +91,14 @@ class MatrixMul {
                 std::vector<size_t> a_shape = {0,shape_a[a.ndim()-2], shape_a[a.ndim()-1]};
                 std::vector<size_t> b_shape= {0,shape_b[b.ndim()-2], shape_b[b.ndim()-1]};
 
-                a_shape[0] = accumulate(shape_a.begin(), shape_a.end()-2, size_t{1}, multiplies<size_t>());
+                a_shape[0] = std::accumulate(shape_a.begin(), shape_a.end()-2, size_t{1}, std::multiplies<size_t>());
                 a.reshape(a_shape);
 
-                b_shape[0] = accumulate(shape_b.begin(), shape_b.end()-2, size_t{1}, multiplies<size_t>());
+                b_shape[0] = std::accumulate(shape_b.begin(), shape_b.end()-2, size_t{1}, std::multiplies<size_t>());
                 b.reshape(b_shape);
 
                 if(a_shape[0] != b_shape[0] || a_shape[2] != b_shape[1]) {
-                    throw runtime_error("Incompatible shapes");
+                    throw std::runtime_error("Incompatible shapes");
                 }
                 c = mul.batch_multiplication(a,b);
                 a.reshape(shape_a);
@@ -106,21 +106,21 @@ class MatrixMul {
             }   
             else if(a.ndim() == 2 && b.ndim() == 2) {
                 if(shape_a[1] != shape_b[0]) {
-                    throw runtime_error("Incompatible shapes");
+                    throw std::runtime_error("Incompatible shapes");
                 }
                 c = mul.single_multiplication(a,b);
             }
             else if(a.ndim() >=3 && b.ndim() == 2){
                 std::vector<size_t> a_shape = {0,shape_a[a.ndim()-2], shape_a[a.ndim()-1]};
-                a_shape[0] = accumulate(shape_a.begin(), shape_a.end()-2, size_t{1}, multiplies<size_t>());
+                a_shape[0] = std::accumulate(shape_a.begin(), shape_a.end()-2, size_t{1}, std::multiplies<size_t>());
                 a.reshape(a_shape);
                 if(a_shape[2] != shape_b[0]) {
-                    throw runtime_error("Incompatible shapes");
+                    throw std::runtime_error("Incompatible shapes");
                 }
                 c = mul.broadcast_multiplication(a,b);
                 a.reshape(shape_a);
             } else {
-                throw runtime_error("This dimensional multiplication is not currently available, maybe soon many be never, who knows");
+                throw std::runtime_error("This dimensional multiplication is not currently available, maybe soon many be never, who knows");
             }
             return c;
         }

@@ -70,7 +70,7 @@ class NDRange {
         }
 
         size_t size(){
-            size_t sz = accumulate(shape.begin(), shape.end(), size_t{1}, multiplies<size_t>());
+            size_t sz = std::accumulate(shape.begin(), shape.end(), size_t{1}, std::multiplies<size_t>());
             return sz;
         }
 };
