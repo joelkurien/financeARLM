@@ -83,7 +83,7 @@ class MatrixMul {
         }
 
     public:
-        static Tensor matmul(Tensor& a, Tensor& b){
+        static Tensor matmul(Tensor a, Tensor b){
             Tensor c;
             const vector<size_t> shape_a = a.shape();
             const vector<size_t> shape_b = b.shape();

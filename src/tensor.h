@@ -8,6 +8,7 @@
 #include<cmath>
 #include<limits>
 #include<numeric>
+#include<numbers>
 #include<omp.h>
 #include<cblas.h>
 #include "nditerator.h"
@@ -492,6 +493,33 @@ class Tensor {
                 }
             }
             return Tensor(result, shapes);
+        }
+
+        Tensor relu(){
+            vector<double> res;
+            res.reserve(size());
+
+            for(int i=0; i<size(); i++){
+                res.push_back(max(valvec[i], 0.0));
+            }
+
+            return Tensor(res, shapes);
+        }
+
+        Tensor gelu(){
+            vector<double> res;
+            res.reserve(size());
+
+            const double constant = sqrt(2.0 / numbers::pi);
+            for(int i=0; i<size(); i++){
+                double x = valvec[i];
+                double cube = x*x*x;
+                double inner = constant*(x+0.044715*cube);
+                double val = 0.5 * x * (1.0 + tanh(inner));
+                res.push_back(val);
+            }
+
+            return Tensor(res, shapes);
         }
 
         //test operations
