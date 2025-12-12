@@ -76,7 +76,8 @@ class TensorX : public std::enable_shared_from_this<TensorX>{
         }
 
     private:
-        void topological_sort(std::shared_ptr<TensorX> tensor, std::unordered_set<TensorX*>& visited, std::vector<std::shared_ptr<TensorX>>& topo_order) {
+        void topological_sort(std::shared_ptr<TensorX> tensor, std::unordered_set<TensorX*>& visited, 
+                                std::vector<std::shared_ptr<TensorX>>& topo_order) {
             if(visited.find(tensor.get()) != visited.end()) return;
 
             visited.insert(tensor.get());
