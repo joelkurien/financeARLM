@@ -4,6 +4,7 @@
 #include "tensor.h"
 #include "nditerator.h"
 #include "MatrixMultiply.h"
+#include "autograd.h"
 
 using namespace std;
 using namespace Eigen;
