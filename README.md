@@ -36,6 +36,9 @@ Completed all required broadcasting rules that are necessary to build a transfor
 
 ## Autograd Library (C++)
 
+**Day 1- Computational graph**
+Why the fuck did I take up this mountanous task, creating the computational graph itself is hell, if Jane Street or some other fucking company does not hire me, I will fucking burn someone's house down. Fucking cunt ass job market. Anyways, created the computational graph, had to learn topological graphs, shared pointers, smart pointers and memory management for the same. I had to refer to code from other sources since I could not understand what was going on in this shit, and it took about 4hrs to write like 20-30 lines of code. I just want to die OMG.
+
 ## Backtesting Engine
 
 Designed and implemented the foundation of a custom backtesting engine intended for seamless integration with the ARLM, enabling direct evaluation of strategy outputs generated from financial text analysis.
