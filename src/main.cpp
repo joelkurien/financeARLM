@@ -24,6 +24,7 @@ int main(){
     std::shared_ptr c = divide(a,4);
     c->get_data().prntd(c->get_data().as_vector());
     c->backward();
+    c->backward();
     a->get_grad().prntd(a->get_grad().as_vector());
     //b->get_grad().prntd(b->get_grad().as_vector());
     return 0;

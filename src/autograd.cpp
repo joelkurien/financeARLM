@@ -46,8 +46,8 @@ void TensorX::backward() {
     std::reverse(topological_order.begin(), topological_order.end());
 
     for(auto& tensor: topological_order){
-        if((tensor.get())->autograd_function){
-            (tensor.get())->autograd_function->backward_function();
+        if(tensor->autograd_function){
+            tensor->autograd_function->backward_function();
         }
     }
 }
