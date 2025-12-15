@@ -25,19 +25,23 @@ Implemented arithematic methods that a transformer needs: Matrix addition, linea
 **Day 7 — Refactoring and Reductions**  
 Refactored the element-wise addition, subtraction, division and multiplication, also implemented the reduction across single axes logic - will apply it for sum, mean, min and min later. Also generalized broadcasting for each operation. Also added parallelization to computation intensive operations
 
-**Day 8 - Reductions and functional operations**
+**Day 8 - Reductions and functional operations**    
 Implemented the sum, mean and maximum finding along an axis, also completed the implementation of softmax along an axis and layernormalization along an axis with a parameterized gamma and beta values that can be passed and a fixed error variance value.
 
-**Day 9 - Matrix multiplication and broadcasting rules**
+**Day 9 - Matrix multiplication and broadcasting rules**    
 Implemented matrix multiplication using BLAS library because it was too complex and time consuming. I had to refer multiple sources on how to handle concurrency and control GPU/CPU performance so that I dont burn out my CPU, but failed miserably so I just resorted to using BLAS because I am lazy af.
 
-**Day 10 - Broadcasting rules**
+**Day 10 - Broadcasting rules** 
 Completed all required broadcasting rules that are necessary to build a transformer/basic feedforward network. Further implemented the Relu and Gelu functions as well. We have completed all the necessary functions required by a tensor library to build transformers and neural networks. Fucking hell!!!! I fucking hate C++ but have to do it if I want to get a good career somewhere. 
 
 ## Autograd Library (C++)
 
-**Day 1- Computational graph**
+**Day 1- Computational graph**  
 Why the fuck did I take up this mountanous task, creating the computational graph itself is hell, if Jane Street or some other fucking company does not hire me, I will fucking burn someone's house down. Fucking cunt ass job market. Anyways, created the computational graph, had to learn topological graphs, shared pointers, smart pointers and memory management for the same. I had to refer to code from other sources since I could not understand what was going on in this shit, and it took about 4hrs to write like 20-30 lines of code. I just want to die OMG.
+
+**Day 2- Elementwise operations gradients** 
+Cleaned up my code and separated my .h and .cpp files. Created autograd operations for elementwise arithematic operations
+
 
 ## Backtesting Engine
 
