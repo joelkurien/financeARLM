@@ -15,6 +15,12 @@ find_package(LAPACK REQUIRED)
 include_directories("~/eigen/eigen-5.0.0")
 
 # Add executable
-add_executable(financeARLM src/main.cpp)
+add_executable(financeARLM 
+    src/main.cpp
+    src/autograd.cpp
+    src/tensor.cpp
+    src/MatrixMultiply.cpp
+    src/nditerator.cpp
+)
 
 target_link_libraries(financeARLM PRIVATE OpenMP::OpenMP_CXX ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES})
