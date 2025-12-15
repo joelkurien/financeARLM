@@ -43,4 +43,11 @@ class TensorX : public std::enable_shared_from_this<TensorX>{
 };
 
 std::shared_ptr<TensorX> multiply(std::shared_ptr<TensorX> x, std::shared_ptr<TensorX> y);
+std::shared_ptr<TensorX> multiply(std::shared_ptr<TensorX> x, double y);
+std::shared_ptr<TensorX> add(std::shared_ptr<TensorX> x, std::shared_ptr<TensorX> y);
+std::shared_ptr<TensorX> add(std::shared_ptr<TensorX> x, double y);
+std::shared_ptr<TensorX> subtract(std::shared_ptr<TensorX> x, std::shared_ptr<TensorX> y);
+std::shared_ptr<TensorX> subtract(std::shared_ptr<TensorX> x, double y);
+std::shared_ptr<TensorX> divide(std::shared_ptr<TensorX> x, std::shared_ptr<TensorX> y);
+std::shared_ptr<TensorX> divide(std::shared_ptr<TensorX> x, double y);
 #endif

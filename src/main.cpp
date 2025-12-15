@@ -21,10 +21,10 @@ int main(){
     }
     a->get_data().prntd(a->get_data().as_vector());
     b->get_data().prntd(b->get_data().as_vector());
-    std::shared_ptr c = multiply(a,b);
+    std::shared_ptr c = divide(a,4);
     c->get_data().prntd(c->get_data().as_vector());
     c->backward();
     a->get_grad().prntd(a->get_grad().as_vector());
-    b->get_grad().prntd(b->get_grad().as_vector());
+    //b->get_grad().prntd(b->get_grad().as_vector());
     return 0;
 }

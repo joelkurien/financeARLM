@@ -83,3 +83,111 @@ std::shared_ptr<TensorX> multiply(std::shared_ptr<TensorX> x, std::shared_ptr<Te
     z->set_autograd_fn(autograd);
     return z;
 }
+
+std::shared_ptr<TensorX> multiply(std::shared_ptr<TensorX> x, double y){
+    Tensor result = x->get_data() * y;
+    std::shared_ptr<TensorX> z = std::make_shared<TensorX>(result, true);
+
+    auto backward_fn = [x,y,z](){
+        Tensor grad_x = z->get_grad() * y;
+        x->accumulate(grad_x);
+    };
+
+    std::shared_ptr<Autograd> autograd = std::make_shared<Autograd>(backward_fn, std::vector{x});
+    z->set_autograd_fn(autograd);
+    return z;
+}
+
+std::shared_ptr<TensorX> add(std::shared_ptr<TensorX> x, std::shared_ptr<TensorX> y){
+    Tensor result = x->get_data() + y->get_data();
+    std::shared_ptr<TensorX> z = std::make_shared<TensorX>(result, true);
+
+    auto backward_fn = [x,y,z](){
+        Tensor grad_x = z->get_grad() * 1;
+        x->accumulate(grad_x);
+
+        Tensor grad_y = z->get_grad() * 1;
+        y->accumulate(grad_y);
+    };
+
+    std::shared_ptr<Autograd> autograd = std::make_shared<Autograd>(backward_fn, std::vector{x, y});
+    z->set_autograd_fn(autograd);
+    return z;
+}
+
+std::shared_ptr<TensorX> add(std::shared_ptr<TensorX> x, double y){
+    Tensor result = x->get_data() + y;
+    std::shared_ptr<TensorX> z = std::make_shared<TensorX>(result, true);
+
+    auto backward_fn = [x,z](){
+        Tensor grad_x = z->get_grad() * 1;
+        x->accumulate(grad_x);
+    };
+
+    std::shared_ptr<Autograd> autograd = std::make_shared<Autograd>(backward_fn, std::vector{x});
+    z->set_autograd_fn(autograd);
+    return z;
+}
+
+std::shared_ptr<TensorX> subtract(std::shared_ptr<TensorX> x, std::shared_ptr<TensorX> y){
+    Tensor result = x->get_data() - y->get_data();
+    std::shared_ptr<TensorX> z = std::make_shared<TensorX>(result, true);
+
+    auto backward_fn = [x,y,z](){
+        Tensor grad_x = z->get_grad() * 1;
+        x->accumulate(grad_x);
+
+        Tensor grad_y = z->get_grad() * -1;
+        y->accumulate(grad_y);
+    };
+
+    std::shared_ptr<Autograd> autograd = std::make_shared<Autograd>(backward_fn, std::vector{x, y});
+    z->set_autograd_fn(autograd);
+    return z;
+}
+
+std::shared_ptr<TensorX> subtract(std::shared_ptr<TensorX> x, double y){
+    Tensor result = x->get_data() - y;
+    std::shared_ptr<TensorX> z = std::make_shared<TensorX>(result, true);
+
+    auto backward_fn = [x,z](){
+        Tensor grad_x = z->get_grad() * 1;
+        x->accumulate(grad_x);
+    };
+
+    std::shared_ptr<Autograd> autograd = std::make_shared<Autograd>(backward_fn, std::vector{x});
+    z->set_autograd_fn(autograd);
+    return z;
+}
+
+std::shared_ptr<TensorX> divide(std::shared_ptr<TensorX> x, std::shared_ptr<TensorX> y){
+    Tensor result = x->get_data() / y->get_data();
+    std::shared_ptr<TensorX> z = std::make_shared<TensorX>(result, true);
+
+    auto backward_fn = [x,y,z](){
+        Tensor grad_x = z->get_grad() / y->get_data();
+        x->accumulate(grad_x);
+
+        Tensor y_squared = y->get_data() * y->get_data();
+        Tensor grad_y = z->get_grad() * x->get_data() / y_squared * -1.0;
+        y->accumulate(grad_y);
+    };
+
+    std::shared_ptr<Autograd> autograd = std::make_shared<Autograd>(backward_fn, std::vector{x, y});
+    z->set_autograd_fn(autograd);
+    return z;
+}
+
+std::shared_ptr<TensorX> divide(std::shared_ptr<TensorX> x, double y){
+    Tensor result = x->get_data() / y;
+    std::shared_ptr<TensorX> z = std::make_shared<TensorX>(result, true);
+
+    auto backward_fn = [x,y,z](){
+        Tensor grad_x = z->get_grad() / y;
+        x->accumulate(grad_x);
+    };
+
+    std::shared_ptr<Autograd> autograd = std::make_shared<Autograd>(backward_fn, std::vector{x});
+    z->set_autograd_fn(autograd);
+    return z;
+}
