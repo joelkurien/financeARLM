@@ -191,3 +191,22 @@ std::shared_ptr<TensorX> divide(std::shared_ptr<TensorX> x, double y){
     z->set_autograd_fn(autograd);
     return z;
 }
+
+std::shared_ptr<TensorX> softmax(std::shared_ptr<TensorX> x, const size_t axis){
+    Tensor result = x->get_data().softmax(axis);
+
+    std::shared_ptr<TensorX> z = std::make_shared<TensorX>(result, true);
+
+    auto backward_fn = [x,z, axis](){
+        Tensor s = z->get_data();
+        Tensor grad_z = z->get_grad();
+        Tensor s_prod = (s*grad_z).sum(axis).unsqueeze(axis);
+        Tensor s_r = grad_z - s_prod;
+        Tensor grad_x = s * s_r;
+        x->accumulate(grad_x);
+    };
+
+    std::shared_ptr<Autograd> autograd = std::make_shared<Autograd>(backward_fn, std::vector{x});
+    z->set_autograd_fn(autograd);
+    return z;
+}

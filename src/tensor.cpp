@@ -24,7 +24,10 @@ Tensor::Tensor(double* ptr, std::vector<size_t> shape_list, std::vector<size_t> 
 Tensor::Tensor(const Tensor& other)
     : valvec(other.valvec), shapes(other.shapes), strides(other.strides), dim(other.dim)
 {
-    basePtr = valvec.data();
+    if(!valvec.empty())
+        basePtr = valvec.data();
+    else
+        basePtr = other.basePtr;
 }
 
 Tensor& Tensor::operator= (const Tensor& other){
@@ -33,7 +36,11 @@ Tensor& Tensor::operator= (const Tensor& other){
         shapes = other.shapes;
         strides = other.strides;
         dim = other.dim;
-        basePtr = valvec.data();
+
+        if(!valvec.empty())
+            basePtr = valvec.data();
+        else
+            basePtr = other.basePtr;
     }
     return *this;
 }
@@ -90,7 +97,31 @@ std::vector<size_t> Tensor::computeStrides(std::vector<size_t> shps){
 double* Tensor::data() { return basePtr; }
 const double* Tensor::data() const { return basePtr; }
 
-std::vector<double> Tensor::as_vector() { return valvec; }
+std::vector<double> Tensor::as_vector() { 
+    if(!valvec.empty())
+        return valvec; 
+
+    size_t total_size = size();
+
+    std::vector<double> res;
+    res.reserve(total_size);
+
+    std::vector<size_t> idxes(dim, 0);
+    for(size_t i=0; i<total_size; i++){
+        size_t offset = 0;
+        for(size_t d=0; d<dim; d++){
+            offset += idxes[d]*strides[d];
+        }
+        res.push_back(basePtr[offset]);
+
+        for (int d = dim - 1; d >= 0; --d) {
+            idxes[d]++;
+            if (idxes[d] < shapes[d]) break;
+            idxes[d] = 0;
+        }
+    }
+    return res;
+}
 size_t Tensor::ndim() const { return dim; }
 std::vector<size_t> Tensor::get_strides() const { return strides; }    
 std::vector<size_t> Tensor::shape() const { return shapes; }
@@ -117,7 +148,7 @@ bool Tensor::shape_check(std::vector<size_t> t_shp){
     return true;
 }
 
-std::vector<size_t> Tensor::broadcast_shape(Tensor& t){
+std::vector<size_t> Tensor::broadcast_shape(const Tensor& t){
     if(!shape_check(t.shape())) {}
     std::vector<size_t> fnl_shape;
     size_t maxl = std::max(t.ndim(), dim);
@@ -136,7 +167,7 @@ std::vector<size_t> Tensor::broadcast_shape(Tensor& t){
     return fnl_shape;
 }
 
-Tensor Tensor::singleton_rule(Tensor& t){
+Tensor Tensor::singleton_rule(const Tensor& t){
     if(!shape_check(t.shape())) {}
     std::vector<size_t> fnl_shape;
     size_t maxl = std::max(t.ndim(), dim);
@@ -144,7 +175,7 @@ Tensor Tensor::singleton_rule(Tensor& t){
     std::vector<size_t>smv(maxl,1);
     const auto& src = t.ndim() >= dim ? shapes : t.shape();
     const auto& trg = t.ndim() >= dim ? t.shape() : shapes;
-    double* ptr = t.ndim() >= dim ? basePtr : t.data();
+    double* ptr = t.ndim() >= dim ? basePtr : const_cast<double*>(t.data());
     std::vector<size_t> newStrides = t.ndim() >= dim ? get_strides() : t.get_strides();
     size_t nd = t.ndim() >= dim ? dim : t.ndim();
     for(size_t i=0; i<nd; i++){
@@ -165,8 +196,10 @@ Tensor Tensor::unsqueeze(size_t axis){
     std::vector<size_t> new_shape = shapes;
     std::vector<size_t> new_strides = strides;
     new_shape.insert(new_shape.begin()+axis, 1);
-    new_strides.insert(new_strides.begin()+axis, 0);
-    return Tensor(basePtr, new_shape, new_strides);
+
+    new_strides = computeStrides(new_shape);
+    
+    return Tensor(valvec, new_shape);
 }
 
 Tensor Tensor::expand(std::vector<size_t> target){
@@ -181,7 +214,7 @@ Tensor Tensor::expand(std::vector<size_t> target){
     return Tensor(basePtr, target, new_strides);
 }
 
-Tensor Tensor::concatenate(Tensor& b, const size_t axis){
+Tensor Tensor::concatenate(const Tensor& b, const size_t axis){
     if(dim != b.ndim()) throw std::invalid_argument("Tensor dimension mismatch");
     if(axis >= dim) throw std::invalid_argument("Axis is invalid");
     std::vector<size_t> new_shape(dim,0);
@@ -306,7 +339,7 @@ Tensor Tensor::permute(const std::optional<std::vector<size_t>>& rotaxis) {
 //endregion data-viewing
 
 //region element-wise operations
-Tensor Tensor::operator+ (Tensor& t) {
+Tensor Tensor::operator+ (const Tensor& t) {
     return tensorOp(t, [](double a, double b){ return a+b; });
 }
 
@@ -314,7 +347,7 @@ Tensor Tensor::operator+ (double val){
     return scalarOp(val, [](double a, double b){ return a+b; }); 
 }
 
-Tensor Tensor::operator- (Tensor& t){
+Tensor Tensor::operator- (const Tensor& t){
     return tensorOp(t, [](double a, double b){ return a-b; });
 }
 
@@ -322,7 +355,7 @@ Tensor Tensor::operator- (double val) {
     return scalarOp(val, [](double a, double b){ return a-b; });
 }
 
-Tensor Tensor::operator* (Tensor& t) {
+Tensor Tensor::operator* (const Tensor& t) {
     return tensorOp(t, [](double a, double b){ return a*b; });
 }
 
@@ -334,7 +367,7 @@ Tensor Tensor::operator/ (double val) {
     return scalarOp(val, [](double a, double b){ return a/b; });
 }
 
-Tensor Tensor::operator/ (Tensor& t){
+Tensor Tensor::operator/ (const Tensor& t){
     return tensorOp(t, [](double a, double b){ return a/b; });
 }
 //endregion element-wise operations
@@ -490,4 +523,9 @@ void Tensor::prntd(std::vector<double> x){
         std::cout<<e<<" ";
     }
     std::cout<<std::endl;
+}
+
+Tensor dot(Tensor x, Tensor y, const size_t axis){
+    Tensor b = (x*y).sum(axis).unsqueeze(axis);
+    return b;
 }

@@ -20,12 +20,30 @@ int main(){
         b->get_data().put({x,0}, x+2);
     }
     a->get_data().prntd(a->get_data().as_vector());
-    b->get_data().prntd(b->get_data().as_vector());
-    std::shared_ptr c = divide(a,4);
-    c->get_data().prntd(c->get_data().as_vector());
-    c->backward();
-    c->backward();
+    // b->get_data().prntd(b->get_data().as_vector());
+    // std::shared_ptr c = divide(a,4);
+    // c->get_data().prntd(c->get_data().as_vector());
+    // c->backward();
+    // c->backward();
+    // a->get_grad().prntd(a->get_grad().as_vector());
+    std::shared_ptr<TensorX> d = softmax(a,0);
+    d->backward();
     a->get_grad().prntd(a->get_grad().as_vector());
     //b->get_grad().prntd(b->get_grad().as_vector());
+
+    Tensor x({3,1});
+    Tensor y({3,1});
+    double j=0;
+    double k=0;
+    for(size_t i=0; i<3; i++){
+        x.put({i,0}, i);
+        y.put({i,0}, i);
+    }
+
+    x.prntd(x.as_vector());
+    y.prntd(y.as_vector());
+    Tensor z = dot(x,y,0);
+    z.prntd(z.as_vector());
+
     return 0;
 }

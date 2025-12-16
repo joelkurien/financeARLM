@@ -23,7 +23,7 @@ class Tensor {
 
         //generalized elementwise arithematic operations
         template<typename TensorOp>
-        Tensor tensorOp(Tensor& t, TensorOp op){
+        Tensor tensorOp(const Tensor& t, TensorOp op){
             Tensor a = (t.ndim() > dim) ? singleton_rule(t) : *this;
             Tensor b = (t.ndim() < dim) ? singleton_rule(t) : t;
 
@@ -37,7 +37,22 @@ class Tensor {
 
             #pragma omp parallel for if(total_size> 10000)
             for(size_t vidx=0; vidx<indices.size(); vidx++){
-                double left = a.at(indices[vidx]), right = b.at(indices[vidx]);
+                const auto& idx = indices[vidx];
+
+                std::vector<size_t> idx_a(a.ndim()), idx_b(b.ndim());
+
+                size_t o_a = ans_shape.size() - a.ndim();
+                size_t o_b = ans_shape.size() - b.ndim();
+
+                for(size_t i=0; i<a.ndim(); i++){
+                    idx_a[i] = (a.shapes[i] == 1) ? 0 : idx[i+o_a];
+                }
+
+                for(size_t i=0; i<b.ndim(); i++){
+                    idx_b[i] = (b.shapes[i] == 1) ? 0 : idx[i+o_b];
+                }
+
+                double left = a.at(idx_a), right = b.at(idx_b);
                 new_valvec[vidx] = op(left, right);
             }
 
@@ -91,11 +106,11 @@ class Tensor {
 
 //region broadcasting rules
         bool shape_check(std::vector<size_t> t_shp);
-        std::vector<size_t> broadcast_shape(Tensor& t);
-        Tensor singleton_rule(Tensor& t);
+        std::vector<size_t> broadcast_shape(const Tensor& t);
+        Tensor singleton_rule(const Tensor& t);
         Tensor unsqueeze(size_t axis);
         Tensor expand(std::vector<size_t> target);
-        Tensor concatenate(Tensor& b, const size_t axis);
+        Tensor concatenate(const Tensor& b, const size_t axis);
         Tensor mask_filled(std::vector<bool> mask, double replace);
 
 //region access and modification
@@ -111,14 +126,14 @@ class Tensor {
 //endregion data-viewing
 
 //region element-wise operations
-        Tensor operator+ (Tensor& t);
+        Tensor operator+ (const Tensor& t);
         Tensor operator+ (double val);
-        Tensor operator- (Tensor& t);
+        Tensor operator- (const Tensor& t);
         Tensor operator- (double val);
-        Tensor operator* (Tensor& t) ;
+        Tensor operator* (const Tensor& t) ;
         Tensor operator* (double val) ;
         Tensor operator/ (double val) ;
-        Tensor operator/ (Tensor& t);
+        Tensor operator/ (const Tensor& t);
 //endregion element-wise operations
 
 //region reductions
@@ -141,5 +156,7 @@ class Tensor {
         void prnt(std::vector<size_t> x);
         void prntd(std::vector<double> x);
 };
+
+Tensor dot(Tensor x, Tensor y, const size_t axis);
 
 #endif
