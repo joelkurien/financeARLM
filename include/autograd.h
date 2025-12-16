@@ -42,6 +42,7 @@ class TensorX : public std::enable_shared_from_this<TensorX>{
                                 std::vector<std::shared_ptr<TensorX>>& topo_order);
 };
 
+//elementwise operations
 std::shared_ptr<TensorX> multiply(std::shared_ptr<TensorX> x, std::shared_ptr<TensorX> y);
 std::shared_ptr<TensorX> multiply(std::shared_ptr<TensorX> x, double y);
 std::shared_ptr<TensorX> add(std::shared_ptr<TensorX> x, std::shared_ptr<TensorX> y);
@@ -50,4 +51,16 @@ std::shared_ptr<TensorX> subtract(std::shared_ptr<TensorX> x, std::shared_ptr<Te
 std::shared_ptr<TensorX> subtract(std::shared_ptr<TensorX> x, double y);
 std::shared_ptr<TensorX> divide(std::shared_ptr<TensorX> x, std::shared_ptr<TensorX> y);
 std::shared_ptr<TensorX> divide(std::shared_ptr<TensorX> x, double y);
+
+//functional operations
+std::shared_ptr<TensorX> softmax(std::shared_ptr<TensorX> x, const size_t axis);
+std::shared_ptr<TensorX> layer_norm(std::shared_ptr<TensorX> x, const size_t gamma, const size_t beta, const size_t axis);
+std::shared_ptr<TensorX> relu(std::shared_ptr<TensorX> x);
+std::shared_ptr<TensorX> gelu(std::shared_ptr<TensorX> x);
+std::shared_ptr<TensorX> sum(std::shared_ptr<TensorX> x, const size_t axis);
+std::shared_ptr<TensorX> mean(std::shared_ptr<TensorX> x, const size_t axis);
+std::shared_ptr<TensorX> maximum(std::shared_ptr<TensorX> x, const size_t axis);
+
+std::shared_ptr<TensorX> matmul(std::shared_ptr<TensorX> x, std::shared_ptr<TensorX> y);
+std::shared_ptr<TensorX> MSELoss(std::shared_ptr<TensorX> x);
 #endif
