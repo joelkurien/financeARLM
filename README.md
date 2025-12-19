@@ -45,8 +45,11 @@ Cleaned up my code and separated my .h and .cpp files. Created autograd operatio
 **Day 3- Softmax gradients and debugging**
 Today was intended to implement the gradients for all the reduction operations but it was cut short due to the issue of debugging and resolving issues that was caused due to the unsqueeze() function. The cause of issue - when unsqueeze was called on a temporary object that was bound to be destroyed once called (sum(axis) that returns a tensor) the base pointer of the unsqueeze will then be pointing to jackshit => dangling pointer, due to this issue not being found I wasted about 3 hrs, learning about dangling pointers and started to get annoyed, so I just made the unsqueeze to create a brand new tensor instead of the originally intended shallow copy. I had taken assistance from AI sources to understand how to resolve it and they had recommended using shared_ptr, but as I am unaware of how to use shared_ptr, we will have to overhaul and remodel the tensor library in a later date to incorporate shared_ptr and unique_ptr for dereferencing safety. For now, we have completed the implementation of softmax gradients, tmrw will look forward to completing the other reductions and may be, just may be do matrix multiplication as well - if it poses to be hell I will be using libraries.
 
+**Day 4- Reduction operation and matrix multiplication gradients**  
+Implemented the backward functions for mean, sum along an axis, relu and gelu functions, matrix multiplication, tranpose and permute operations. Learned more about dereferencing and viewing an instance from another one.
 
 ## Backtesting Engine
 
 Designed and implemented the foundation of a custom backtesting engine intended for seamless integration with the ARLM, enabling direct evaluation of strategy outputs generated from financial text analysis.
+
 
