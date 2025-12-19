@@ -2,7 +2,6 @@
 
 Tensor::Tensor(std::vector<size_t> shape_list)
 {
-    if(shape_list.size() < 2) throw std::invalid_argument("Vector shape should have at least 2 dimensions");
     shapes = shape_list;
     dim = shapes.size();
     strides = computeStrides(shapes);
@@ -15,6 +14,12 @@ Tensor::Tensor(std::vector<double> vec, std::vector<size_t> shape_list)
 {
     basePtr = valvec.data();
     strides = computeStrides(shapes);
+}
+
+Tensor::Tensor(std::vector<double> vec, std::vector<size_t> shape_list, std::vector<size_t> _strides)
+    : shapes(shape_list), dim(shapes.size()), valvec(vec), strides(_strides)
+{
+    basePtr = valvec.data();
 }
 
 Tensor::Tensor(double* ptr, std::vector<size_t> shape_list, std::vector<size_t> strides)
@@ -193,6 +198,7 @@ Tensor Tensor::singleton_rule(const Tensor& t){
 }
 
 Tensor Tensor::unsqueeze(size_t axis){
+    Tensor view = *this;
     std::vector<size_t> new_shape = shapes;
     std::vector<size_t> new_strides = strides;
     new_shape.insert(new_shape.begin()+axis, 1);
@@ -203,6 +209,7 @@ Tensor Tensor::unsqueeze(size_t axis){
 }
 
 Tensor Tensor::expand(std::vector<size_t> target){
+    Tensor view = *this;
     std::vector<size_t> new_strides = strides;
     if(shape_check(target)){
         for(size_t i=0; i<target.size(); i++){
@@ -211,7 +218,10 @@ Tensor Tensor::expand(std::vector<size_t> target){
             if(shapes[i] == 1) new_strides[i] = 0;
         }
     }
-    return Tensor(basePtr, target, new_strides);
+    // view.shapes = target;
+    // view.strides = new_strides;
+    // return view;
+    return Tensor(valvec, target, new_strides);
 }
 
 Tensor Tensor::concatenate(const Tensor& b, const size_t axis){
@@ -322,20 +332,23 @@ Tensor Tensor::reshape(std::vector<size_t> new_shape){
 }
 
 Tensor Tensor::permute(const std::optional<std::vector<size_t>>& rotaxis) {
-    std::vector<size_t> new_stride = strides;
-    std::vector<size_t> new_shape = shapes;
-    if(rotaxis != std::nullopt && rotaxis->size() == dim){
-        for(size_t i=0; i<dim; i++){
-            new_stride[i] = strides[rotaxis->at(i)];
-            new_shape[i] = shapes[rotaxis->at(i)];
+    Tensor view = *this;
+    for(size_t i=0; i<dim; i++){
+        if(rotaxis.has_value() && rotaxis->size() == dim){
+            view.shapes[i] = this->shapes[rotaxis->at(i)];
+            view.strides[i] = this->shapes[rotaxis->at(i)];
+        } else {
+            view.shapes[i] = this->shapes[dim-i-1];
+            view.strides[i] = this->strides[dim-i-1];
         }
-    } else {
-        std::reverse(new_stride.begin(), new_stride.end());
-        std::reverse(new_shape.begin(), new_shape.end());
     }
-
-    return Tensor(basePtr, new_shape, new_stride);  
+    return view; 
 }
+
+Tensor Tensor::transpose(){
+    return permute();
+}
+
 //endregion data-viewing
 
 //region element-wise operations
@@ -385,6 +398,8 @@ Tensor Tensor::sum(const size_t axis){
         }
         result[i] = sum;
     }
+
+    if(reduced_shape.empty()) reduced_shape.push_back(1);
     return Tensor(result, reduced_shape);
 }
 
@@ -482,7 +497,8 @@ Tensor Tensor::relu(){
     std::vector<double> res;
     res.reserve(size());
 
-    for(int i=0; i<size(); i++){
+    #pragma omp parallel for simd schedule(static)
+    for(size_t i=0; i<size(); i++){
         res.push_back(std::max(valvec[i], 0.0));
     }
 
@@ -494,7 +510,9 @@ Tensor Tensor::gelu(){
     res.reserve(size());
 
     const double constant = sqrt(2.0 / std::numbers::pi);
-    for(int i=0; i<size(); i++){
+
+    #pragma omp parallel for simd schedule(static)
+    for(size_t i=0; i<size(); i++){
         double x = valvec[i];
         double cube = x*x*x;
         double inner = constant*(x+0.044715*cube);

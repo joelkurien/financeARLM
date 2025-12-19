@@ -11,8 +11,8 @@ Tensor MatrixMul::batch_multiplication(const Tensor& a, const Tensor& b){
     int K = static_cast<int>(a_shape[2]);
     int N = static_cast<int>(b_shape[2]);
 
-    const int stride_a = M*K;
-    const int stride_b = K*N;
+    const int stride_a = a.get_strides()[0];
+    const int stride_b = b.get_strides()[0];
     const int stride_c = M*N;
 
     Tensor c({B, a_shape[1], b_shape[2]});
@@ -21,8 +21,11 @@ Tensor MatrixMul::batch_multiplication(const Tensor& a, const Tensor& b){
         const double* b_ptr = b.data() + i* stride_b;
         double* c_ptr = c.data() + i*stride_c;
 
+        int lda = static_cast<int>(a.get_strides()[1]);
+        int ldb = static_cast<int>(b.get_strides()[1]);
+
         cblas_dgemm(layout, transA, transB, M, N, K, 
-                    alpha, a_ptr, K, b_ptr, N, beta, c_ptr, N);
+                    alpha, a_ptr, lda, b_ptr, ldb, beta, c_ptr, N);
     }
     return c;
 }
@@ -31,13 +34,22 @@ Tensor MatrixMul::single_multiplication(const Tensor& a, const Tensor& b){
     std::vector<size_t> a_shape = a.shape();
     std::vector<size_t> b_shape = b.shape();
 
+    std::vector<size_t> a_strides = a.get_strides();
+    std::vector<size_t> b_strides = b.get_strides();
+    
+    CBLAS_TRANSPOSE finalTransA = (a_strides.back() != 1) ? CblasTrans : CblasNoTrans;
+    CBLAS_TRANSPOSE finalTransB = (b_strides.back() != 1) ? CblasTrans : CblasNoTrans;
+
     int M = static_cast<int>(a_shape[0]);
     int K = static_cast<int>(a_shape[1]);
     int N = static_cast<int>(b_shape[1]);
 
+    int lda = static_cast<int>(std::max(a_strides[0], a_strides[1]));
+    int ldb = static_cast<int>(std::max(b_strides[0], b_strides[1]));
+
     Tensor c({a_shape[0], b_shape[1]});
-    cblas_dgemm(layout, transA, transB, M, N, K, 
-                alpha, a.data(), K, b.data(), N, beta, c.data(), N);
+    cblas_dgemm(layout, finalTransA, finalTransB, M, N, K, 
+                alpha, a.data(), lda, b.data(), ldb, beta, c.data(), N);
     return c;
 }
 

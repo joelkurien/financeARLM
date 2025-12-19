@@ -89,6 +89,7 @@ class Tensor {
         Tensor(std::vector<size_t> shape_list);
         Tensor(std::vector<double> vec, std::vector<size_t> shape_list);
         Tensor(double* ptr, std::vector<size_t> shape_list, std::vector<size_t> strides);
+        Tensor(std::vector<double> vec, std::vector<size_t> shape_list, std::vector<size_t> _strides);
 
         //copy constructor
         Tensor(const Tensor& other);
@@ -123,6 +124,7 @@ class Tensor {
         Tensor slice(std::vector<size_t> start, std::vector<size_t> shape, const std::optional<std::vector<size_t>>& _strides = std::nullopt);
         Tensor reshape(std::vector<size_t> new_shape);
         Tensor permute(const std::optional<std::vector<size_t>>& rotaxis = std::nullopt);
+        Tensor transpose();
 //endregion data-viewing
 
 //region element-wise operations

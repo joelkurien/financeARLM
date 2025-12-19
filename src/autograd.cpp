@@ -23,7 +23,11 @@ void TensorX::set_autograd_fn(std::shared_ptr<Autograd> fn){
 
 void TensorX::accumulate(Tensor& new_grad){
     if(!required_grad) return;
-    grad_ = grad_ + new_grad;
+    if(grad_.size() == 0)
+        grad_ = new_grad;
+    else{
+        grad_ = grad_ + new_grad;
+    }
 }        
 
 void TensorX::grad_zeros() {
@@ -31,12 +35,23 @@ void TensorX::grad_zeros() {
         grad_ = Tensor(data_.shape());
 }
 
-void TensorX::backward() {
+void TensorX::backward(const std::optional<Tensor>& grad) {
     if(!required_grad) throw std::runtime_error("Gradient requirement was set to false");
 
     //initialize our gradient
-    std::vector<double> ones (data_.size(), 1);
-    grad_ = Tensor(ones, data_.shape());
+    if(grad.has_value()){
+        if(grad->shape() != data_.shape()){
+            throw std::runtime_error("Gradient/Data shape mismatch");
+        }
+        std::vector<double> grad_values(grad->size(), 1);
+        grad_ = Tensor(grad_values, grad->shape());
+    }
+    else {
+        if(data_.size() != 1){
+            throw std::runtime_error("Gradient is implictly set to scalar");
+        }
+        grad_ = Tensor({1.0}, data_.shape());
+    }
 
     std::vector<std::shared_ptr<TensorX>> topological_order;
     std::unordered_set<TensorX*> visited;
@@ -204,6 +219,133 @@ std::shared_ptr<TensorX> softmax(std::shared_ptr<TensorX> x, const size_t axis){
         Tensor s_r = grad_z - s_prod;
         Tensor grad_x = s * s_r;
         x->accumulate(grad_x);
+    };
+
+    std::shared_ptr<Autograd> autograd = std::make_shared<Autograd>(backward_fn, std::vector{x});
+    z->set_autograd_fn(autograd);
+    return z;
+}
+
+std::shared_ptr<TensorX> sum(std::shared_ptr<TensorX> x, const size_t axis){
+    Tensor result = x->get_data().sum(axis);
+    result.prnt(x->get_data().shape());
+    std::shared_ptr<TensorX> z = std::make_shared<TensorX>(result, true);
+
+    auto backward_fn = [x,z, axis](){
+        Tensor grad_z = z->get_grad();
+        Tensor res = grad_z.unsqueeze(axis).expand(x->get_data().shape());
+        x->accumulate(res);
+    };
+
+    std::shared_ptr<Autograd> autograd = std::make_shared<Autograd>(backward_fn, std::vector{x});
+    z->set_autograd_fn(autograd);
+    return z;
+}
+
+std::shared_ptr<TensorX> mean(std::shared_ptr<TensorX> x, const size_t axis){
+    Tensor result = x->get_data().sum(axis);
+
+    std::shared_ptr<TensorX> z = std::make_shared<TensorX>(result, true);
+
+    auto backward_fn = [x,z, axis](){
+        Tensor grad_z = z->get_grad() * (1.0/x->get_data().shape()[axis]);
+        Tensor res = grad_z.unsqueeze(axis).expand(x->get_data().shape());
+        x->accumulate(res);
+    };
+
+    std::shared_ptr<Autograd> autograd = std::make_shared<Autograd>(backward_fn, std::vector{x});
+    z->set_autograd_fn(autograd);
+    return z;
+}
+
+std::shared_ptr<TensorX> relu(std::shared_ptr<TensorX> x){
+    Tensor result = x->get_data().relu();
+
+    std::shared_ptr<TensorX> z = std::make_shared<TensorX>(result, true);
+
+    auto backward_fn = [x,z, result](){
+        Tensor grad_z = z->get_grad();
+
+        std::vector<double> mask(result.size(), 0);
+        const double* resPtr = result.data();
+
+        #pragma omp parallel for simd schedule(static)
+        for(size_t i=0; i<result.size(); i++){
+            mask[i] = resPtr[i] > 0.0 ? 1.0 : 0.0;
+        }
+
+        Tensor masked(mask, result.shape());
+        Tensor res = grad_z * masked;
+        x->accumulate(res);
+    };
+
+    std::shared_ptr<Autograd> autograd = std::make_shared<Autograd>(backward_fn, std::vector{x});
+    z->set_autograd_fn(autograd);
+    return z;
+}
+
+static double gelu_derivative(double x){
+    const double gamma = 0.044715;
+    const double sqrt_over_pi = sqrt(2.0 / std::numbers::pi);
+    const double cube = x*x*x;
+    const double inner = sqrt_over_pi*(x+gamma*cube);
+    const double sech_squared = 1-tanh(inner)*tanh(inner);
+    const double pdf = 0.5*x*sech_squared;
+    const double cdf = 0.5*(1.0+tanh(inner));
+    return pdf+cdf;
+}
+
+std::shared_ptr<TensorX> gelu(std::shared_ptr<TensorX> x){
+    Tensor result = x->get_data().gelu();
+
+    std::shared_ptr<TensorX> z = std::make_shared<TensorX>(result, true);
+
+    auto backward_fn = [x, z, result](){
+        Tensor grad_z = z->get_grad();
+
+        std::vector<double> grad_values(result.size(), 0);
+        const double* resPtr = result.data();
+        
+        #pragma omp parallel for simd schedule(static)
+        for(size_t i=0; i<result.size(); i++){
+            grad_values[i] = gelu_derivative(resPtr[i]);
+        } 
+
+        Tensor grad(grad_values, result.shape());
+        Tensor res = grad_z * grad;
+        x->accumulate(res);       
+    };
+
+    std::shared_ptr<Autograd> autograd = std::make_shared<Autograd>(backward_fn, std::vector{x});
+    z->set_autograd_fn(autograd);
+    return z;
+}
+
+std::shared_ptr<TensorX> matmul(std::shared_ptr<TensorX> x, std::shared_ptr<TensorX> y){
+    Tensor result = MatrixMul::matmul(x->get_data(), y->get_data());
+    std::shared_ptr<TensorX> z = std::make_shared<TensorX>(result, true);
+
+    auto backward_fn = [x, y, z] {
+        Tensor grad_z = z->get_grad();
+        Tensor x_grad = MatrixMul::matmul(grad_z, y->get_data().transpose());
+        Tensor y_grad = MatrixMul::matmul(x->get_data().transpose(), grad_z);
+        x->accumulate(x_grad);
+        y->accumulate(y_grad);
+    };
+
+    std::shared_ptr<Autograd> autograd = std::make_shared<Autograd>(backward_fn, std::vector{x,y});
+    z->set_autograd_fn(autograd);
+    return z;
+}
+
+std::shared_ptr<TensorX> transpose(std::shared_ptr<TensorX> x){
+    Tensor result = x->get_data().transpose();
+    std::shared_ptr<TensorX> z = std::make_shared<TensorX>(result, true);
+
+    auto backward_fn = [x, z] {
+        Tensor grad_z = z->get_grad();
+        Tensor grad_T = grad_z.transpose();
+        x->accumulate(grad_T);
     };
 
     std::shared_ptr<Autograd> autograd = std::make_shared<Autograd>(backward_fn, std::vector{x});

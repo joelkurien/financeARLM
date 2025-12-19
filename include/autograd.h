@@ -8,6 +8,7 @@
 #include<algorithm>
 #include<unordered_set>
 #include "tensor.h"
+#include "MatrixMultiply.h"
 
 class TensorX;
 
@@ -35,7 +36,7 @@ class TensorX : public std::enable_shared_from_this<TensorX>{
         void set_autograd_fn(std::shared_ptr<Autograd> fn);
         void accumulate(Tensor& new_grad);
         void grad_zeros();
-        void backward();
+        void backward(const std::optional<Tensor>& grad = std::nullopt);
 
     private:
         void topological_sort(std::shared_ptr<TensorX> tensor, std::unordered_set<TensorX*>& visited, 
@@ -55,14 +56,20 @@ std::shared_ptr<TensorX> divide(std::shared_ptr<TensorX> x, double y);
 //functional operations
 std::shared_ptr<TensorX> softmax(std::shared_ptr<TensorX> x, const size_t axis);
 //std::shared_ptr<TensorX> layer_norm(std::shared_ptr<TensorX> x, const size_t gamma, const size_t beta, const size_t axis);
-// std::shared_ptr<TensorX> relu(std::shared_ptr<TensorX> x);
-// std::shared_ptr<TensorX> gelu(std::shared_ptr<TensorX> x);
-// std::shared_ptr<TensorX> sum(std::shared_ptr<TensorX> x, const size_t axis);
-// std::shared_ptr<TensorX> mean(std::shared_ptr<TensorX> x, const size_t axis);
-// std::shared_ptr<TensorX> maximum(std::shared_ptr<TensorX> x, const size_t axis);
+std::shared_ptr<TensorX> relu(std::shared_ptr<TensorX> x);
+std::shared_ptr<TensorX> gelu(std::shared_ptr<TensorX> x);
+std::shared_ptr<TensorX> sum(std::shared_ptr<TensorX> x, const size_t axis);
+std::shared_ptr<TensorX> mean(std::shared_ptr<TensorX> x, const size_t axis);
 
-// std::shared_ptr<TensorX> matmul(std::shared_ptr<TensorX> x, std::shared_ptr<TensorX> y);
-//std::shared_ptr<TensorX> MSELoss(std::shared_ptr<TensorX> x);
-//permute
-//reshape
+std::shared_ptr<TensorX> matmul(std::shared_ptr<TensorX> x, std::shared_ptr<TensorX> y);
+std::shared_ptr<TensorX> transpose(std::shared_ptr<TensorX> x);
+// std::shared_ptr<TensorX> MSELoss(std::shared_ptr<TensorX> x);
+// permute
+// reshape
+// concat
+// sqrt
+// exp
+// log
+// pow
+// cross_entropy_loss
 #endif
