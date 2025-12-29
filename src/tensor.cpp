@@ -259,38 +259,9 @@ Tensor Tensor::concatenate(const Tensor& b, const size_t axis){
         std::copy(valvec.begin()+a_lft, valvec.begin() + a_lft + a_size, conc.valvec.begin()+conc_idx);
         conc_idx += a_size;
 
-        std::copy(valvec.begin()+b_lft, valvec.begin()+b_lft+b_size, conc.valvec.begin()+conc_idx);
+        std::copy(b.valvec.begin()+b_lft, b.valvec.begin()+b_lft+b_size, conc.valvec.begin()+conc_idx);
         conc_idx += b_size;
     }
-    // vector<size_t> left (shapes.begin(), shapes.begin()+axis);
-
-    // vector<size_t> r1 (shapes.begin()+axis, shapes.end());
-    // vector<size_t> r2 (b.shapes.begin()+axis, b.shapes.end());
-    // auto l_indices = NDRange(left);
-    // auto a_indices = NDRange(r1);
-    // auto b_indices = NDRange(r2);
-
-    // Tensor conc (new_shape);
-    // size_t index = 0;
-    // for(const vector<size_t>& l_idx: l_indices){
-    //     vector<size_t> pos (dim, 0);
-
-    //     for(size_t i=0; i<l_idx.size(); i++){
-    //         pos[i] = l_idx[i];
-    //     }
-    //     for(const vector<size_t>& idx: a_indices){
-    //         for(size_t x=0; x<idx.size(); x++){
-    //             pos[axis+x] = idx[x];
-    //         }
-    //         conc.valvec[index++] = at(pos);
-    //     }
-    //     for(const vector<size_t>& idx: b_indices){
-    //         for(size_t x=0; x<idx.size(); x++){
-    //             pos[axis+x] = idx[x];
-    //         }
-    //         conc.valvec[index++] = b.at(pos);
-    //     }
-    // }
     return conc;
 }
 
@@ -322,6 +293,11 @@ Tensor Tensor::slice(std::vector<size_t> start, std::vector<size_t> shape, const
     std::vector<size_t> actualStrides = _strides.value_or(strides);
     double* subBasePtr = basePtr + jumpTo(start);
     return Tensor(subBasePtr, shape, actualStrides);
+}
+
+Tensor Tensor::slice(size_t start, size_t end, std::vector<size_t> shape_list){
+    std::vector<double> sliced_vec(valvec.begin()+start, valvec.begin()+end);
+    return Tensor(sliced_vec, shape_list);
 }
 
 Tensor Tensor::reshape(std::vector<size_t> new_shape){
@@ -435,6 +411,55 @@ Tensor Tensor::maximum(const size_t axis){
 }
 //endregion reductions
 
+//element-wise functions
+Tensor Tensor::sqrt() {
+    std::vector<double> res;
+    res.reserve(size());
+
+    #pragma omp parallel for simd schedule(static)
+    for(size_t i=0; i<size(); i++){
+        res.push_back(std::sqrt(valvec[i]));
+    }
+
+    return Tensor(res, shapes);
+}
+
+Tensor Tensor::log(){
+    std::vector<double> res;
+    res.reserve(size());
+
+    #pragma omp parallel for simd schedule(static)
+    for(size_t i=0; i<size(); i++){
+        res.push_back(std::log(valvec[i]));
+    }
+
+    return Tensor(res, shapes);
+}
+
+Tensor Tensor::exp(){
+    std::vector<double> res;
+    res.reserve(size());
+
+    #pragma omp parallel for simd schedule(static)
+    for(size_t i=0; i<size(); i++){
+        res.push_back(std::exp(valvec[i]));
+    }
+
+    return Tensor(res, shapes);
+}
+
+Tensor Tensor::pow(const double n){
+    std::vector<double> res;
+    res.reserve(size());
+
+    #pragma omp parallel for simd schedule(static)
+    for(size_t i=0; i<size(); i++){
+        res.push_back(std::pow(valvec[i], n));
+    }
+
+    return Tensor(res, shapes);
+
+}
 //functional operations
 
 // Softmax function
@@ -454,11 +479,11 @@ Tensor Tensor::softmax(const size_t axis){
         }
         double denom = 0;
         for(size_t j=0; j<sax; j++){
-            denom += exp(basePtr[base_idx[i] + stride*j] - mx);
+            denom += std::exp(basePtr[base_idx[i] + stride*j] - mx);
         }
         for(size_t j=0; j<sax; j++){
             size_t idx = base_idx[i] + stride*j;
-            result[idx] = exp(basePtr[idx] - mx) / denom;
+            result[idx] = std::exp(basePtr[idx] - mx) / denom;
         }
     }
     return Tensor(result, shapes);
@@ -480,11 +505,11 @@ Tensor Tensor::layer_norm(const size_t gamma, const size_t beta, const size_t ax
         }
         mu /= sax;
         for(size_t j=0; j<sax; j++){
-            var += pow((basePtr[base_idx[i] + stride*j]-mu),2);
+            var += std::pow((basePtr[base_idx[i] + stride*j]-mu),2);
         }
         var /= sax;
         double e = 1e-12;
-        double inv_std = 1.0 / sqrt(var + e);
+        double inv_std = 1.0 / std::sqrt(var + e);
         for(size_t j=0; j<sax; j++){
             size_t idx = base_idx[i] + stride*j;
             result[idx] = gamma * ((basePtr[idx] - mu) * inv_std ) + beta;
@@ -509,7 +534,7 @@ Tensor Tensor::gelu(){
     std::vector<double> res;
     res.reserve(size());
 
-    const double constant = sqrt(2.0 / std::numbers::pi);
+    const double constant = std::sqrt(2.0 / std::numbers::pi);
 
     #pragma omp parallel for simd schedule(static)
     for(size_t i=0; i<size(); i++){

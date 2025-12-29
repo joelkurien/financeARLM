@@ -122,6 +122,7 @@ class Tensor {
 //region data-viewing
         // referenced slicing -> the slice is still pointing to the same location as the og tensor
         Tensor slice(std::vector<size_t> start, std::vector<size_t> shape, const std::optional<std::vector<size_t>>& _strides = std::nullopt);
+        Tensor slice(size_t start, size_t end, std::vector<size_t> shape_list);
         Tensor reshape(std::vector<size_t> new_shape);
         Tensor permute(const std::optional<std::vector<size_t>>& rotaxis = std::nullopt);
         Tensor transpose();
@@ -143,6 +144,12 @@ class Tensor {
         Tensor mean(const size_t axis);
         Tensor maximum(const size_t axis);
 //endregion reductions
+        //element-wise functions
+        Tensor sqrt();
+        Tensor log();
+        Tensor exp();
+        Tensor pow(const double n);
+
 
         //functional operations
 

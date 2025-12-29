@@ -1,3 +1,5 @@
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
 cmake_minimum_required(VERSION 3.10)
 project(financeARLM)
 
@@ -12,7 +14,7 @@ find_package(BLAS REQUIRED)
 find_package(LAPACK REQUIRED)
 
 # Include Eigen (adjust this path to where you put Eigen in WSL)
-include_directories("~/eigen/eigen-5.0.0")
+# include_directories("~/eigen/eigen-5.0.0")
 
 # Add executable
 add_executable(financeARLM 

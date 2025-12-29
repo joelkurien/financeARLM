@@ -1,4 +1,3 @@
-#include <Eigen/Dense>
 #include <iostream>
 #include <vector>
 #include "tensor.h"
@@ -46,7 +45,7 @@ int main(){
     // z.prntd(z.as_vector());
 
     std::shared_ptr<TensorX> a = tensor::deep_create({3,4}, true);
-    std::shared_ptr<TensorX> c = tensor::deep_create({4,3}, true);
+    std::shared_ptr<TensorX> c = tensor::deep_create({5,4}, true);
 
     int lol = 0;
     bool flag = false;
@@ -57,18 +56,20 @@ int main(){
     }
 
     int d=0;
-    for(size_t i=0; i<4; i++){
-        for(size_t j=0; j<3; j++){
+    for(size_t i=0; i<5; i++){
+        for(size_t j=0; j<4; j++){
             c->get_data().put({i,j}, d++*2);
         }
     }
 
-    std::shared_ptr<TensorX> z = sum(a,1);
-    //std::shared_ptr<TensorX> l = sum(b, 1);
-    std::shared_ptr<TensorX> l = sum(z,0);
+    std::shared_ptr<TensorX> z = concat(a,c,0);
+    std::shared_ptr<TensorX> b = sum(z, 1);
+    std::shared_ptr<TensorX> l = sum(b,0);
     l->backward();
     //l->get_data().prntd(l->get_data().as_vector());
+    l->get_data().prnt(z->get_data().shape());
+    //l->get_data().prntd(z->get_data().as_vector());
     l->get_data().prntd(a->get_grad().as_vector());
-    l->get_data().prnt(a->get_grad().shape());
+    l->get_data().prnt(c->get_grad().shape());
     return 0;
 }
