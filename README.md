@@ -48,8 +48,12 @@ Today was intended to implement the gradients for all the reduction operations b
 **Day 4- Reduction operation and matrix multiplication gradients**  
 Implemented the backward functions for mean, sum along an axis, relu and gelu functions, matrix multiplication, tranpose and permute operations. Learned more about dereferencing and viewing an instance from another one.
 
+**Day 5- Simple Matrix operations autograd**
+Implemented the autograd for reshaping and concatenating a matrices, elementwise operations such as sqrt, log, exp and pow operations as well. Tomorrow my plan is to complete the small set of autograd left -> permute matrices, layer normalization, MSE Loss and cross entropy loss and then we will create our very own neural layers!!!! Very exciting.
+
 ## Backtesting Engine
 
 Designed and implemented the foundation of a custom backtesting engine intended for seamless integration with the ARLM, enabling direct evaluation of strategy outputs generated from financial text analysis.
+
 
 
