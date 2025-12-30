@@ -160,6 +160,8 @@ class Tensor {
         Tensor relu();
         Tensor gelu();
 
+        void make2d(std::vector<size_t>& shape_list, const size_t axis = 1);
+
         //test operations
         void show();
         void prnt(std::vector<size_t> x);

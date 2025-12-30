@@ -61,15 +61,25 @@ int main(){
             c->get_data().put({i,j}, d++*2);
         }
     }
+    std::shared_ptr<TensorX> gamma = tensor::deep_create({1,4}, true);
+    std::shared_ptr<TensorX> beta  = tensor::deep_create({1,4}, true);
 
-    std::shared_ptr<TensorX> z = concat(a,c,0);
+
+    for (size_t j = 0; j < 4; ++j) {
+        gamma->get_data().put({0,j}, 1.0);  
+        beta->get_data().put({0,j}, 0.0);   
+    }
+    
+    std::shared_ptr<TensorX> z = layer_norm(a,gamma,beta, 1);
     std::shared_ptr<TensorX> b = sum(z, 1);
     std::shared_ptr<TensorX> l = sum(b,0);
     l->backward();
     //l->get_data().prntd(l->get_data().as_vector());
-    l->get_data().prnt(z->get_data().shape());
-    //l->get_data().prntd(z->get_data().as_vector());
+    std::cout<<"z grad output"<<std::endl; 
+    l->get_data().prntd(z->get_grad().as_vector());
+
+    std::cout<<"a grad output"<<std::endl;
     l->get_data().prntd(a->get_grad().as_vector());
-    l->get_data().prnt(c->get_grad().shape());
+    
     return 0;
 }

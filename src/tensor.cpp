@@ -3,6 +3,7 @@
 Tensor::Tensor(std::vector<size_t> shape_list)
 {
     shapes = shape_list;
+    make2d(shapes);
     dim = shapes.size();
     strides = computeStrides(shapes);
     valvec.resize(size(),0);
@@ -10,20 +11,28 @@ Tensor::Tensor(std::vector<size_t> shape_list)
 }
 
 Tensor::Tensor(std::vector<double> vec, std::vector<size_t> shape_list)
-    : shapes(shape_list), dim(shapes.size()), valvec(vec)
+    : shapes(shape_list), valvec(vec)
 {
+    make2d(shapes);
+    dim = shapes.size();
     basePtr = valvec.data();
     strides = computeStrides(shapes);
 }
 
 Tensor::Tensor(std::vector<double> vec, std::vector<size_t> shape_list, std::vector<size_t> _strides)
-    : shapes(shape_list), dim(shapes.size()), valvec(vec), strides(_strides)
+    : shapes(shape_list), valvec(vec), strides(_strides)
 {
+    make2d(shapes);
+    dim = shapes.size();
     basePtr = valvec.data();
 }
 
 Tensor::Tensor(double* ptr, std::vector<size_t> shape_list, std::vector<size_t> strides)
-    : basePtr(ptr), strides(strides), shapes(shape_list), dim(shapes.size()) {}
+    : basePtr(ptr), strides(strides), shapes(shape_list)
+{
+    make2d(shapes);
+    dim = shapes.size();
+}
 
 //copy constructor
 Tensor::Tensor(const Tensor& other)
@@ -76,6 +85,7 @@ std::tuple<std::vector<size_t>, std::vector<size_t>> Tensor::axis_reduction(cons
         }
         base_idx.push_back(base);
     }
+    make2d(reduced_shape, axis);
     return {base_idx, reduced_shape};
 }
 
@@ -413,48 +423,44 @@ Tensor Tensor::maximum(const size_t axis){
 
 //element-wise functions
 Tensor Tensor::sqrt() {
-    std::vector<double> res;
-    res.reserve(size());
+    std::vector<double> res(size());
 
     #pragma omp parallel for simd schedule(static)
     for(size_t i=0; i<size(); i++){
-        res.push_back(std::sqrt(valvec[i]));
+        res[i] = std::sqrt(valvec[i]);
     }
 
     return Tensor(res, shapes);
 }
 
 Tensor Tensor::log(){
-    std::vector<double> res;
-    res.reserve(size());
+    std::vector<double> res(size());
 
     #pragma omp parallel for simd schedule(static)
     for(size_t i=0; i<size(); i++){
-        res.push_back(std::log(valvec[i]));
+        res[i] = std::log(valvec[i]);
     }
 
     return Tensor(res, shapes);
 }
 
 Tensor Tensor::exp(){
-    std::vector<double> res;
-    res.reserve(size());
+    std::vector<double> res(size());
 
     #pragma omp parallel for simd schedule(static)
     for(size_t i=0; i<size(); i++){
-        res.push_back(std::exp(valvec[i]));
+        res[i] = std::exp(valvec[i]);
     }
 
     return Tensor(res, shapes);
 }
 
 Tensor Tensor::pow(const double n){
-    std::vector<double> res;
-    res.reserve(size());
+    std::vector<double> res(size());
 
     #pragma omp parallel for simd schedule(static)
     for(size_t i=0; i<size(); i++){
-        res.push_back(std::pow(valvec[i], n));
+        res[i] = std::pow(valvec[i], n);
     }
 
     return Tensor(res, shapes);
@@ -519,20 +525,18 @@ Tensor Tensor::layer_norm(const size_t gamma, const size_t beta, const size_t ax
 }
 
 Tensor Tensor::relu(){
-    std::vector<double> res;
-    res.reserve(size());
+    std::vector<double> res(size());
 
     #pragma omp parallel for simd schedule(static)
     for(size_t i=0; i<size(); i++){
-        res.push_back(std::max(valvec[i], 0.0));
+        res[i] = std::max(valvec[i], 0.0);
     }
 
     return Tensor(res, shapes);
 }
 
 Tensor Tensor::gelu(){
-    std::vector<double> res;
-    res.reserve(size());
+    std::vector<double> res(size());
 
     const double constant = std::sqrt(2.0 / std::numbers::pi);
 
@@ -542,7 +546,7 @@ Tensor Tensor::gelu(){
         double cube = x*x*x;
         double inner = constant*(x+0.044715*cube);
         double val = 0.5 * x * (1.0 + tanh(inner));
-        res.push_back(val);
+        res[i] = val;
     }
 
     return Tensor(res, shapes);
@@ -567,6 +571,14 @@ void Tensor::prntd(std::vector<double> x){
     }
     std::cout<<std::endl;
 }
+
+void Tensor::make2d(std::vector<size_t>& shape_list, const size_t axis){
+    if(shape_list.size() == 1 && axis == 1)
+        shape_list.push_back(1);
+    if(shape_list.size() == 1 && axis == 0)
+        shape_list.insert(shape_list.begin(), 1);
+}
+
 
 Tensor dot(Tensor x, Tensor y, const size_t axis){
     Tensor b = (x*y).sum(axis).unsqueeze(axis);
