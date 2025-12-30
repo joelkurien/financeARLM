@@ -51,9 +51,13 @@ Implemented the backward functions for mean, sum along an axis, relu and gelu fu
 **Day 5- Simple Matrix operations autograd**
 Implemented the autograd for reshaping and concatenating a matrices, elementwise operations such as sqrt, log, exp and pow operations as well. Tomorrow my plan is to complete the small set of autograd left -> permute matrices, layer normalization, MSE Loss and cross entropy loss and then we will create our very own neural layers!!!! Very exciting.
 
+**Day 6- Layer Norm and permutation operation autograd**   
+Added autograd for Layer normalization but there are some issues in backward propogration for this method, so I will need to look into it. Also completed the implementation of permutation of matrices autograd. Tomorrow completion with MSE Loss and cross entropy.
+
 ## Backtesting Engine
 
 Designed and implemented the foundation of a custom backtesting engine intended for seamless integration with the ARLM, enabling direct evaluation of strategy outputs generated from financial text analysis.
+
 
 
 
