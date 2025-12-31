@@ -54,9 +54,13 @@ Implemented the autograd for reshaping and concatenating a matrices, elementwise
 **Day 6- Layer Norm and permutation operation autograd**   
 Added autograd for Layer normalization but there are some issues in backward propogration for this method, so I will need to look into it. Also completed the implementation of permutation of matrices autograd. Tomorrow completion with MSE Loss and cross entropy.
 
+**Day 7 - Fixed Layer Norm**
+Fixed the backpropagation of layer normalization, the issue was that the gradient of the result will of shape nxm - but the operands that achieved the result might be of shape nxm and 1xm, so the gradients for the two operands should be different, but initially we were considering the shapes of the two operands as the same which was causing repeated addition. To resolve this we created a unbroadcasting function that converts the gradient back to the operand shape (1xm) so that there is no repeated operation being performed. This took a large chunk of my time, may be later(tmrw/day after) I may complete the loss functions - I will largely focus on cross entropy as creating a language based transformer we are more focused on alphabet classification over regressive analysis. Maybe later we may implement MSE and MAD as well.
+
 ## Backtesting Engine
 
 Designed and implemented the foundation of a custom backtesting engine intended for seamless integration with the ARLM, enabling direct evaluation of strategy outputs generated from financial text analysis.
+
 
 
 
