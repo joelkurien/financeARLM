@@ -496,7 +496,7 @@ Tensor Tensor::softmax(const size_t axis){
 }
 
 // Layer Normalization
-Tensor Tensor::layer_norm(const size_t gamma, const size_t beta, const size_t axis){
+Tensor Tensor::layer_norm(Tensor gamma, Tensor beta, const size_t axis){
     auto [base_idx, reduced_shape] = axis_reduction(axis);
     std::vector<double> result(size());
 
@@ -518,10 +518,12 @@ Tensor Tensor::layer_norm(const size_t gamma, const size_t beta, const size_t ax
         double inv_std = 1.0 / std::sqrt(var + e);
         for(size_t j=0; j<sax; j++){
             size_t idx = base_idx[i] + stride*j;
-            result[idx] = gamma * ((basePtr[idx] - mu) * inv_std ) + beta;
+            result[idx] = (basePtr[idx] - mu) * inv_std;
         }
     }
-    return Tensor(result, shapes);
+
+    Tensor res = gamma * Tensor(result, shapes) + beta;
+    return res;
 }
 
 Tensor Tensor::relu(){

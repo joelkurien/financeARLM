@@ -73,6 +73,4 @@ std::shared_ptr<TensorX> permute(std::shared_ptr<TensorX> x, const std::optional
 std::shared_ptr<TensorX> reshape(std::shared_ptr<TensorX> x, std::vector<size_t> new_shape);
 std::shared_ptr<TensorX> concat(std::shared_ptr<TensorX> x, std::shared_ptr<TensorX> y, const size_t axis);
  
-// cross_entropy_loss
-// std::shared_ptr<TensorX> MSELoss(std::shared_ptr<TensorX> x);
 #endif

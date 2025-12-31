@@ -156,7 +156,7 @@ class Tensor {
         // Softmax function
         Tensor softmax(const size_t axis);
         // Layer Normalization
-        Tensor layer_norm(const size_t gamma, const size_t beta, const size_t axis);
+        Tensor layer_norm(Tensor gamma, Tensor beta, const size_t axis);
         Tensor relu();
         Tensor gelu();
 
