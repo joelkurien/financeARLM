@@ -60,6 +60,7 @@ std::shared_ptr<TensorX> pow(std::shared_ptr<TensorX> x, const double n);
 
 //functional operations
 std::shared_ptr<TensorX> softmax(std::shared_ptr<TensorX> x, const size_t axis);
+std::shared_ptr<TensorX> log_softmax(std::shared_ptr<TensorX> x, const size axis);
 std::shared_ptr<TensorX> layer_norm(std::shared_ptr<TensorX> x, std::shared_ptr<TensorX> gamma, std::shared_ptr<TensorX> beta, const size_t axis);
 std::shared_ptr<TensorX> relu(std::shared_ptr<TensorX> x);
 std::shared_ptr<TensorX> gelu(std::shared_ptr<TensorX> x);

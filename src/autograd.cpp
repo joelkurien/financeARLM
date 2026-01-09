@@ -240,6 +240,24 @@ std::shared_ptr<TensorX> softmax(std::shared_ptr<TensorX> x, const size_t axis){
     return z;
 }
 
+std::shared_ptr<TensorX> log_softmax(std::shared_ptr<TensorX> x, const size_t axis){
+    Tensor result = x->get_data().log_softmax(axis);
+
+    std::shared_ptr<TensorX> z = std::make_shared<TensorX>(result, true);
+
+    auto backward_fn = [x,z, axis](){
+        Tensor s = z->get_data();
+        Tensor grad_z = z->get_grad();
+        Tensor grad_sum = (grad_z).sum(axis);
+        Tensor grad_x = grad_z - s * grad_sum;
+        x->accumulate(grad_x);
+    };
+
+    std::shared_ptr<Autograd> autograd = std::make_shared<Autograd>(backward_fn, std::vector{x});
+    z->set_autograd_fn(autograd);
+    return z;
+}
+
 std::shared_ptr<TensorX> layer_norm(std::shared_ptr<TensorX> x, std::shared_ptr<TensorX> gamma, std::shared_ptr<TensorX> beta, const size_t axis){
     std::shared_ptr<TensorX> mean_of_x = mean(x, axis);
     std::shared_ptr<TensorX> centered = subtract(x, mean_of_x);

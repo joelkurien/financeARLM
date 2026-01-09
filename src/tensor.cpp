@@ -34,6 +34,14 @@ Tensor::Tensor(double* ptr, std::vector<size_t> shape_list, std::vector<size_t> 
     dim = shapes.size();
 }
 
+Tensor::Tensor(double* ptr, std::vector<size_t> shape_list)
+    : basePtr(ptr), shapes(shape_list)
+{
+    make2d(shapes);
+    dim = shapes.size();
+    strides = computeStrides(shapes);
+}
+
 //copy constructor
 Tensor::Tensor(const Tensor& other)
     : valvec(other.valvec), shapes(other.shapes), strides(other.strides), dim(other.dim)
@@ -145,6 +153,10 @@ size_t Tensor::size() const { return std::accumulate(shapes.begin(), shapes.end(
 
 bool Tensor::empty() const { return (dim == 0 ? true : false); }
 
+Tensor Tensor::view(std::vector<size_t> new_shape){
+    return Tensor(basePtr, new_shape);
+}
+
 //region broadcasting rules
 bool Tensor::shape_check(std::vector<size_t> t_shp){
     size_t tdim = t_shp.size();
@@ -215,7 +227,7 @@ Tensor Tensor::unsqueeze(size_t axis){
 
     new_strides = computeStrides(new_shape);
     
-    return Tensor(valvec, new_shape);
+    return Tensor(basePtr, new_shape);
 }
 
 Tensor Tensor::expand(std::vector<size_t> target){
@@ -231,7 +243,7 @@ Tensor Tensor::expand(std::vector<size_t> target){
     // view.shapes = target;
     // view.strides = new_strides;
     // return view;
-    return Tensor(valvec, target, new_strides);
+    return Tensor(basePtr, target, new_strides);
 }
 
 Tensor Tensor::concatenate(const Tensor& b, const size_t axis){
@@ -490,6 +502,33 @@ Tensor Tensor::softmax(const size_t axis){
         for(size_t j=0; j<sax; j++){
             size_t idx = base_idx[i] + stride*j;
             result[idx] = std::exp(basePtr[idx] - mx) / denom;
+        }
+    }
+    return Tensor(result, shapes);
+}
+
+Tensor Tensor::log_softmax(const size_t axis){
+    auto [base_idx, reduced_shape] = axis_reduction(axis);
+    std::vector<double> result(size());
+
+    const size_t sax = shapes[axis];
+    const size_t stride = strides[axis];
+
+    #pragma omp parallel for
+    for(size_t i=0; i<base_idx.size(); i++){
+        double mx = -std::numeric_limits<double>::infinity();
+        for(size_t j=0; j<sax; j++){
+            double val = basePtr[base_idx[i] + stride*j];
+            mx = mx < val ? val : mx;
+        }
+        double denom = 0;
+        for(size_t j=0; j<sax; j++){
+            denom += std::exp(basePtr[base_idx[i] + stride*j] - mx);
+        }
+
+        for(size_t j=0; j<sax; j++){
+            size_t idx = base_idx[i] + stride*j;
+            result[idx] = basePtr[idx] - mx - std::log(denom);
         }
     }
     return Tensor(result, shapes);

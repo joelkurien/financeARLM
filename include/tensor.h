@@ -90,6 +90,7 @@ class Tensor {
         Tensor(std::vector<double> vec, std::vector<size_t> shape_list);
         Tensor(double* ptr, std::vector<size_t> shape_list, std::vector<size_t> strides);
         Tensor(std::vector<double> vec, std::vector<size_t> shape_list, std::vector<size_t> _strides);
+        Tensor(double* ptr, std::vector<size_t> shape_list);
 
         //copy constructor
         Tensor(const Tensor& other);
@@ -99,17 +100,20 @@ class Tensor {
         const double* data() const;
 
         std::vector<double> as_vector();
+
         size_t ndim() const;
         std::vector<size_t> get_strides() const;
         std::vector<size_t> shape() const;
         size_t size() const;
         bool empty() const;
+        Tensor view(std::vector<size_t> new_shape);
 
 //region broadcasting rules
         bool shape_check(std::vector<size_t> t_shp);
         std::vector<size_t> broadcast_shape(const Tensor& t);
         Tensor singleton_rule(const Tensor& t);
         Tensor unsqueeze(size_t axis);
+        Tensor squeeze(const std::optional<size_t> axis = std::nullopt);
         Tensor expand(std::vector<size_t> target);
         Tensor concatenate(const Tensor& b, const size_t axis);
         Tensor mask_filled(std::vector<bool> mask, double replace);
@@ -155,6 +159,7 @@ class Tensor {
 
         // Softmax function
         Tensor softmax(const size_t axis);
+        Tensor log_softmax(const size_t axis);
         // Layer Normalization
         Tensor layer_norm(Tensor gamma, Tensor beta, const size_t axis);
         Tensor relu();
