@@ -11,6 +11,7 @@
 #include<numbers>
 #include<omp.h>
 #include<cblas.h>
+#include<sstream>
 #include "nditerator.h"
 
 class Tensor {
@@ -116,7 +117,7 @@ class Tensor {
         Tensor squeeze(const std::optional<size_t> axis = std::nullopt);
         Tensor expand(std::vector<size_t> target);
         Tensor concatenate(const Tensor& b, const size_t axis);
-        Tensor mask_filled(std::vector<bool> mask, double replace);
+        Tensor mask_filled(const Tensor& mask, double replace);
 
 //region access and modification
         double at(std::vector<size_t> pos);
@@ -133,6 +134,13 @@ class Tensor {
 //endregion data-viewing
 
 //region element-wise operations
+        void add_(const Tensor& other){
+            #pragma omp parallel for simd schedule(static)
+            for(size_t i=0; i<size(); i++){
+                basePtr[i] += other.basePtr[i];
+            }
+        }
+
         Tensor operator+ (const Tensor& t);
         Tensor operator+ (double val);
         Tensor operator- (const Tensor& t);
@@ -164,6 +172,9 @@ class Tensor {
         Tensor layer_norm(Tensor gamma, Tensor beta, const size_t axis);
         Tensor relu();
         Tensor gelu();
+        Tensor sigmoid();
+        Tensor tanh();
+        Tensor elu(const double alpha);
 
         void make2d(std::vector<size_t>& shape_list, const size_t axis = 1);
 
@@ -171,6 +182,18 @@ class Tensor {
         void show();
         void prnt(std::vector<size_t> x);
         void prntd(std::vector<double> x);
+
+        template <typename T>
+        std::string vec_string(std::vector<T> vec){
+            std::ostringstream output;
+            output<<"(";
+            for(size_t i=0; i<vec.size(); i++){
+                output << vec[i];
+                if(i < vec.size()-1) output << ", ";
+            }
+            output<<")";
+            return output.str();
+        }
 };
 
 Tensor dot(Tensor x, Tensor y, const size_t axis);

@@ -1,8 +1,5 @@
-#include <iostream>
 #include <vector>
 #include "tensor.h"
-#include "nditerator.h"
-#include "MatrixMultiply.h"
 #include "autograd.h"
 #include "tensor_fac.h"
 
@@ -51,7 +48,7 @@ int main(){
     bool flag = false;
     for(size_t i=0; i<3; i++){
         for(size_t j=0; j<4; j++){
-            a->get_data().put({i,j}, lol++);
+            a->get_data().put({i,j}, -lol++);
         }
     }
 
@@ -61,16 +58,34 @@ int main(){
             c->get_data().put({i,j}, d++*2);
         }
     }
-    std::shared_ptr<TensorX> gamma = tensor::deep_create({1,4}, true);
-    std::shared_ptr<TensorX> beta  = tensor::deep_create({1,4}, true);
 
+    Tensor sig = a->get_data().sigmoid();
+    Tensor th = a->get_data().tanh();
 
-    for (size_t j = 0; j < 4; ++j) {
-        gamma->get_data().put({0,j}, 1.0);  
-        beta->get_data().put({0,j}, 0.0);   
-    }
+    sig.prntd(sig.as_vector());
+    th.prntd(th.as_vector());
+    // std::shared_ptr<TensorX> gamma = tensor::deep_create({1,4}, true);
+    // std::shared_ptr<TensorX> beta  = tensor::deep_create({1,4}, true);
+    //
+    //
+    // for (size_t j = 0; j < 4; ++j) {
+    //     gamma->get_data().put({0,j}, 1.0);  
+    //     beta->get_data().put({0,j}, 0.0);   
+    // }
+    //
     
-    std::shared_ptr<TensorX> z = layer_norm(a,gamma,beta, 1);
+    std::vector<double> mask_data = {
+        1, 1, 1, 1,  // Row 0: Masked
+        0, 0, 0, 0,  // Row 1: Kept
+        0, 0, 0, 0   // Row 2: Kept
+    };
+    Tensor mask(mask_data, a->get_data().shape());
+
+    // 3. Forward Pass
+    double replace_val = -1e9;
+
+    std::shared_ptr<TensorX> z = elu(a, 1);
+    z->get_data().prntd(z->get_data().as_vector());
     std::shared_ptr<TensorX> b = sum(z, 1);
     std::shared_ptr<TensorX> l = sum(b,0);
     l->backward();
@@ -80,6 +95,6 @@ int main(){
 
     std::cout<<"a grad output"<<std::endl;
     l->get_data().prntd(a->get_grad().as_vector());
-    
+
     return 0;
 }

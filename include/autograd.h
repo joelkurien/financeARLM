@@ -8,7 +8,6 @@
 #include<algorithm>
 #include<unordered_set>
 #include "tensor.h"
-#include "MatrixMultiply.h"
 
 class TensorX;
 
@@ -60,10 +59,11 @@ std::shared_ptr<TensorX> pow(std::shared_ptr<TensorX> x, const double n);
 
 //functional operations
 std::shared_ptr<TensorX> softmax(std::shared_ptr<TensorX> x, const size_t axis);
-std::shared_ptr<TensorX> log_softmax(std::shared_ptr<TensorX> x, const size axis);
+std::shared_ptr<TensorX> log_softmax(std::shared_ptr<TensorX> x, const size_t axis);
 std::shared_ptr<TensorX> layer_norm(std::shared_ptr<TensorX> x, std::shared_ptr<TensorX> gamma, std::shared_ptr<TensorX> beta, const size_t axis);
 std::shared_ptr<TensorX> relu(std::shared_ptr<TensorX> x);
 std::shared_ptr<TensorX> gelu(std::shared_ptr<TensorX> x);
+std::shared_ptr<TensorX> elu(std::shared_ptr<TensorX> x, const double alpha);
 std::shared_ptr<TensorX> sum(std::shared_ptr<TensorX> x, const size_t axis);
 std::shared_ptr<TensorX> mean(std::shared_ptr<TensorX> x, const size_t axis);
 std::shared_ptr<TensorX> var(std::shared_ptr<TensorX> x, const size_t axis);
@@ -73,5 +73,7 @@ std::shared_ptr<TensorX> transpose(std::shared_ptr<TensorX> x);
 std::shared_ptr<TensorX> permute(std::shared_ptr<TensorX> x, const std::optional<std::vector<size_t>>& rotaxis = std::nullopt);
 std::shared_ptr<TensorX> reshape(std::shared_ptr<TensorX> x, std::vector<size_t> new_shape);
 std::shared_ptr<TensorX> concat(std::shared_ptr<TensorX> x, std::shared_ptr<TensorX> y, const size_t axis);
- 
+std::shared_ptr<TensorX> slice(std::shared_ptr<TensorX> x, std::vector<size_t> start, std::vector<size_t> shape, const std::optional<std::vector<size_t>>& _strides = std::nullopt); 
+std::shared_ptr<TensorX> masked_fill(std::shared_ptr<TensorX> x, const Tensor& mask, double replace);
+
 #endif

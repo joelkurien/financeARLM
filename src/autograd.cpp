@@ -1,4 +1,7 @@
 #include "autograd.h"
+#include "nditerator.h"
+#include "MatrixMultiply.h"
+
 
 namespace broadcasts {
     Tensor grad_reshape(Tensor gradient, const std::vector<size_t> target_shape){
@@ -376,6 +379,37 @@ std::shared_ptr<TensorX> gelu(std::shared_ptr<TensorX> x){
     return z;
 }
 
+std::shared_ptr<TensorX> elu(std::shared_ptr<TensorX> x, const double alpha){
+    Tensor result = x->get_data().elu(alpha);
+
+    std::shared_ptr<TensorX> z = std::make_shared<TensorX>(result, true);
+
+    auto backward_fn = [x, z, alpha] {
+        Tensor grad_z = z->get_grad();
+
+        std::vector<double> grad_vals(x->get_data().size(), 0);
+        const double* resPtr = x->get_data().data();
+        
+        #pragma omp parallel for simd schedule(static)
+        for(size_t i=0; i<x->get_data().size(); i++){
+            if(resPtr[i] > 0.0){
+                grad_vals[i] = grad_z.data()[i];
+            }
+            else {
+                grad_vals[i] = grad_z.data()[i] * alpha * (std::exp(resPtr[i]));
+            }
+        }
+
+        Tensor grad_x(grad_vals, x->get_data().shape());
+        x->accumulate(grad_x);
+    };
+
+    std::shared_ptr<Autograd> autograd = std::make_shared<Autograd>(backward_fn, std::vector{x});
+    z->set_autograd_fn(autograd);
+    return z;
+
+}
+
 std::shared_ptr<TensorX> matmul(std::shared_ptr<TensorX> x, std::shared_ptr<TensorX> y){
     Tensor result = MatrixMul::matmul(x->get_data(), y->get_data());
     std::shared_ptr<TensorX> z = std::make_shared<TensorX>(result, true);
@@ -409,14 +443,22 @@ std::shared_ptr<TensorX> transpose(std::shared_ptr<TensorX> x){
 }
 
 std::shared_ptr<TensorX> permute(std::shared_ptr<TensorX> x, const std::optional<std::vector<size_t>>& rotaxis){
-    std::vector<size_t> og_rotaxis(x->get_data().ndim()); 
-    std::iota(og_rotaxis.begin(), og_rotaxis.end(), 0);
     Tensor result = x->get_data().permute(rotaxis);
     std::shared_ptr<TensorX> z = std::make_shared<TensorX>(result, true);
-
-    auto backward_fn = [x, z, og_rotaxis] {
+    
+    std::vector<size_t> inv_axis(x->get_data().ndim());
+    
+    if(rotaxis.has_value() && rotaxis->size() == x->get_data().ndim()){
+        for(size_t i=0; i<rotaxis->size(); i++){
+            inv_axis[rotaxis->at(i)] = i;
+        }
+    }
+    else {
+        std::iota(inv_axis.rbegin(), inv_axis.rend(), 0);
+    }
+    auto backward_fn = [x, z, inv_axis] {
         Tensor grad_z = z->get_grad();
-        Tensor grad_x = grad_z.permute(og_rotaxis);
+        Tensor grad_x = grad_z.permute(inv_axis);
         x->accumulate(grad_x);
     };
 
@@ -459,6 +501,47 @@ std::shared_ptr<TensorX> concat(std::shared_ptr<TensorX> x, std::shared_ptr<Tens
     };
     
     std::shared_ptr<Autograd> autograd = std::make_shared<Autograd>(backward_fn, std::vector{x,y});
+    z->set_autograd_fn(autograd);
+    return z;
+}
+
+std::shared_ptr<TensorX> slice(std::shared_ptr<TensorX> x, std::vector<size_t> start, std::vector<size_t> shape, const std::optional<std::vector<size_t>>& _strides){
+    Tensor result = x->get_data().slice(start, shape, _strides);
+    std::shared_ptr<TensorX> z = std::make_shared<TensorX>(result, true);
+
+    auto backward_fn = [x, z, start] {
+        Tensor grad_z = z->get_grad();
+        Tensor grad_x = Tensor(x->get_data().shape());
+        std::vector<size_t> shape = grad_z.shape(); 
+        auto indices = NDRange(shape);
+        for(const auto& idx: indices){
+            std::vector<size_t> org_idx = idx; 
+            for(size_t i=0; i<start.size(); i++){
+                org_idx[i] += start[i];
+            }
+            grad_x.put(org_idx, grad_z.at(idx));
+        }
+        x->accumulate(grad_x);
+    };
+
+    std::shared_ptr<Autograd> autograd = std::make_shared<Autograd>(backward_fn, std::vector{x});
+    z->set_autograd_fn(autograd);
+    return z;
+}
+
+std::shared_ptr<TensorX> masked_fill(std::shared_ptr<TensorX> x, const Tensor& mask, double replace){
+    Tensor result = x->get_data().mask_filled(mask, replace);
+    std::shared_ptr<TensorX> z = std::make_shared<TensorX>(result, true);
+        
+    auto backward_fn = [x, z, mask] {
+        Tensor grad_z = z->get_grad();
+        for(size_t i=0; i<mask.size(); i++){
+            if(mask.data()[i] == 0.0) grad_z.data()[i] = 0.0;
+        }
+        x->accumulate(grad_z);
+    };
+
+    std::shared_ptr<Autograd> autograd = std::make_shared<Autograd>(backward_fn, std::vector{x});
     z->set_autograd_fn(autograd);
     return z;
 }

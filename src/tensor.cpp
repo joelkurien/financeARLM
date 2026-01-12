@@ -1,5 +1,9 @@
 #include "tensor.h"
 
+#define THROW_ERR(msg) \
+    throw std::runtime_error(std::string(__FILE__) + ":" + std::to_string(__LINE__) + \
+    " in function " + __func__ + "() -> " + msg)
+
 Tensor::Tensor(std::vector<size_t> shape_list)
 {
     shapes = shape_list;
@@ -154,7 +158,11 @@ size_t Tensor::size() const { return std::accumulate(shapes.begin(), shapes.end(
 bool Tensor::empty() const { return (dim == 0 ? true : false); }
 
 Tensor Tensor::view(std::vector<size_t> new_shape){
-    return Tensor(basePtr, new_shape);
+    Tensor vw = *this;
+    vw.basePtr = this->basePtr;
+    vw.shapes = new_shape;
+    vw.strides = computeStrides(new_shape);
+    return vw;
 }
 
 //region broadcasting rules
@@ -171,7 +179,7 @@ bool Tensor::shape_check(std::vector<size_t> t_shp){
     }
 
     for(size_t i=0; i<maxl; i++)
-        if(!(smv[maxl-i-1] == trg[maxl-i-1] || smv[maxl-i-1] == 1 || trg[maxl-i-1] == 1)) throw std::runtime_error("Shapes incompatible");
+        if(!(smv[maxl-i-1] == trg[maxl-i-1] || smv[maxl-i-1] == 1 || trg[maxl-i-1] == 1)) THROW_ERR("Shapes mismatch"+vec_string(shapes)+" vs "+vec_string(t_shp));
     return true;
 }
 
@@ -287,12 +295,15 @@ Tensor Tensor::concatenate(const Tensor& b, const size_t axis){
     return conc;
 }
 
-Tensor Tensor::mask_filled(std::vector<bool> mask, double replace){
+Tensor Tensor::mask_filled(const Tensor& mask, double replace){
     if(mask.size() != size()) throw std::invalid_argument("Mask/Matrix size mismatch");
-    std::vector<double> n_vec;
-    n_vec.reserve(size());
+    std::vector<double> n_vec(size());
+   
+    const double* m_ptr = mask.data();
+
+    #pragma omp parallel for simd schedule(static) 
     for(int i=0; i<size(); i++){
-        n_vec.push_back(mask[i] ? replace : valvec[i]);
+        n_vec[i] = (m_ptr[i] == 0.0 ? replace : basePtr[i]);
     }
     return Tensor(n_vec, shapes);
 }
@@ -313,8 +324,11 @@ void Tensor::put(std::vector<size_t> pos, double val) {
 // referenced slicing -> the slice is still pointing to the same location as the og tensor
 Tensor Tensor::slice(std::vector<size_t> start, std::vector<size_t> shape, const std::optional<std::vector<size_t>>& _strides){
     std::vector<size_t> actualStrides = _strides.value_or(strides);
-    double* subBasePtr = basePtr + jumpTo(start);
-    return Tensor(subBasePtr, shape, actualStrides);
+    Tensor slc = *this;
+    slc.basePtr = this->basePtr + jumpTo(start);
+    slc.shapes = shape;
+    slc.strides = actualStrides;
+    return slc;
 }
 
 Tensor Tensor::slice(size_t start, size_t end, std::vector<size_t> shape_list){
@@ -330,17 +344,16 @@ Tensor Tensor::reshape(std::vector<size_t> new_shape){
 }
 
 Tensor Tensor::permute(const std::optional<std::vector<size_t>>& rotaxis) {
-    Tensor view = *this;
+    std::vector<size_t> new_shape = shapes;    
     for(size_t i=0; i<dim; i++){
         if(rotaxis.has_value() && rotaxis->size() == dim){
-            view.shapes[i] = this->shapes[rotaxis->at(i)];
-            view.strides[i] = this->shapes[rotaxis->at(i)];
+            new_shape[i] = this->shapes[rotaxis->at(i)];
         } else {
-            view.shapes[i] = this->shapes[dim-i-1];
-            view.strides[i] = this->strides[dim-i-1];
+            new_shape[i] = this->shapes[dim-i-1];
         }
     }
-    return view; 
+    std::vector<size_t> new_strides = computeStrides(new_shape);
+    return Tensor(this->basePtr, new_shape, new_strides);
 }
 
 Tensor Tensor::transpose(){
@@ -388,7 +401,7 @@ Tensor Tensor::sum(const size_t axis){
     auto [base_idx, reduced_shape] = axis_reduction(axis);
     std::vector<double> result(base_idx.size());
 
-    #pragma omp parallel for
+    #pragma omp parallel for simd schedule(static)
     for(size_t i=0; i<base_idx.size(); i++){
         double sum = 0;
         for(size_t j=0; j<shapes[axis]; j++){
@@ -586,12 +599,46 @@ Tensor Tensor::gelu(){
         double x = valvec[i];
         double cube = x*x*x;
         double inner = constant*(x+0.044715*cube);
-        double val = 0.5 * x * (1.0 + tanh(inner));
+        double val = 0.5 * x * (1.0 + std::tanh(inner));
         res[i] = val;
     }
 
     return Tensor(res, shapes);
 }
+
+Tensor Tensor::sigmoid(){
+    std::vector<double> res(size());
+
+    #pragma omp parallel for simd schedule(static)
+    for(size_t i=0; i<size(); i++){
+        res[i] = 1/(1+std::exp(-basePtr[i]));
+    }
+    
+    return Tensor(res, shapes);
+}
+
+Tensor Tensor::tanh(){
+    std::vector<double> res(size());
+
+    #pragma omp parallel for simd schedule(static)
+    for(size_t i=0; i<size(); i++){
+        res[i] = std::tanh(basePtr[i]);
+    }
+
+    return Tensor(res, shapes);
+}
+
+Tensor Tensor::elu(const double alpha){
+    std::vector<double> res(size());
+
+    #pragma omp parallel for simd schedule(static)
+    for(size_t i=0; i<size(); i++){
+        res[i] = basePtr[i] > 0.0 ? basePtr[i] : alpha * (std::exp(basePtr[i]-1));
+    }
+
+    return Tensor(res, shapes);
+}
+
 
 //test operations
 void Tensor::show(){
