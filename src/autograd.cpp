@@ -484,23 +484,29 @@ std::shared_ptr<TensorX> reshape(std::shared_ptr<TensorX> x, std::vector<size_t>
     return z;
 }
 
-std::shared_ptr<TensorX> concat(std::shared_ptr<TensorX> x, std::shared_ptr<TensorX> y, const size_t axis){
-    Tensor result = x->get_data().concatenate(y->get_data(), axis);   
+std::shared_ptr<TensorX> concat(std::vector<std::shared_ptr<TensorX>> x, const size_t axis){
+
+    std::vector<Tensor> tensors;
+    for(std::shared_ptr<TensorX> t: x) {
+        tensors.push_back(t->get_data());
+    }
+
+    Tensor result = concatenate(tensors, axis);   
 
     std::shared_ptr<TensorX> z = std::make_shared<TensorX>(result, true);
 
-    auto backward_fn = [x, y, z] {
-        Tensor x_data = x->get_data();
-        Tensor y_data = y->get_data();
-
+    auto backward_fn = [x, z, axis] {
         Tensor grad_z = z->get_grad();
-        Tensor grad_x = grad_z.slice(0, x_data.size(), x_data.shape());
-        Tensor grad_y = grad_z.slice(x_data.size(), grad_z.size(), y_data.shape());
-        x->accumulate(grad_x);
-        y->accumulate(grad_y);
+        std::vector<size_t> split_len;
+        for(std::shared_ptr<TensorX> t: x){
+            split_len.push_back(t->get_data().shape()[axis]);
+        }
+        std::vector<Tensor> splits = grad_z.split_uneven(split_len, axis);
+        for(size_t i=0; i<x.size(); i++){
+            x[i]->accumulate(splits[i]);
+        }
     };
-    
-    std::shared_ptr<Autograd> autograd = std::make_shared<Autograd>(backward_fn, std::vector{x,y});
+    std::shared_ptr<Autograd> autograd = std::make_shared<Autograd>(backward_fn, x);
     z->set_autograd_fn(autograd);
     return z;
 }

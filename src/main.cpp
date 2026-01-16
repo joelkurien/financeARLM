@@ -3,9 +3,6 @@
 #include "autograd.h"
 #include "tensor_fac.h"
 
-using namespace std;
-using namespace tensor;
-
 int main(){
     // std::shared_ptr<TensorX> a = tensor::deep_create({3,1}, true);
     // std::shared_ptr<TensorX> b = tensor::deep_create({3,1}, true);
@@ -41,12 +38,12 @@ int main(){
     // Tensor z = dot(x,y,0);
     // z.prntd(z.as_vector());
 
-    std::shared_ptr<TensorX> a = tensor::deep_create({3,4}, true);
+    std::shared_ptr<TensorX> a = tensor::deep_create({5,4}, true);
     std::shared_ptr<TensorX> c = tensor::deep_create({5,4}, true);
 
     int lol = 0;
     bool flag = false;
-    for(size_t i=0; i<3; i++){
+    for(size_t i=0; i<5; i++){
         for(size_t j=0; j<4; j++){
             a->get_data().put({i,j}, -lol++);
         }
@@ -59,11 +56,23 @@ int main(){
         }
     }
 
+    std::vector<Tensor> con = a->get_data().chunk(3, 1);
     Tensor sig = a->get_data().sigmoid();
     Tensor th = a->get_data().tanh();
+    sig.prntd(sig.as_vector_const());
+    th.prntd(th.as_vector_const());
 
-    sig.prntd(sig.as_vector());
-    th.prntd(th.as_vector());
+    std::cout<<"Conc vector ";
+    Tensor m = con[1].mean(1);
+    m.prntd(con[1].as_vector_const());
+    m.prntd(m.as_vector_const());
+    m.prnt(m.shape());
+    std::cout<<"Conc shape ";
+    std::cout<<con.size()<<std::endl;
+
+    a->get_data() += c->get_data();
+    m.prntd(a->get_data().as_vector_const());
+    //con[0].prnt(con[2].shape());
     // std::shared_ptr<TensorX> gamma = tensor::deep_create({1,4}, true);
     // std::shared_ptr<TensorX> beta  = tensor::deep_create({1,4}, true);
     //
@@ -84,7 +93,7 @@ int main(){
     // 3. Forward Pass
     double replace_val = -1e9;
 
-    std::shared_ptr<TensorX> z = elu(a, 1);
+    std::shared_ptr<TensorX> z = concat({a, c}, 1);
     z->get_data().prntd(z->get_data().as_vector());
     std::shared_ptr<TensorX> b = sum(z, 1);
     std::shared_ptr<TensorX> l = sum(b,0);

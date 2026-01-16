@@ -1,14 +1,10 @@
 #ifndef TENSOR_H
 #define TENSOR_H
 
-#include<iostream>
 #include<vector>
 #include<optional>
-#include<algorithm>
 #include<cmath>
-#include<limits>
 #include<numeric>
-#include<numbers>
 #include<omp.h>
 #include<cblas.h>
 #include<sstream>
@@ -80,10 +76,11 @@ class Tensor {
 
         //reduced axis shapes and vectors for reduction operations such as sum, mean and max along axes
         std::tuple<std::vector<size_t>, std::vector<size_t>> axis_reduction(const size_t axis);
+        std::vector<size_t> index(const size_t idx);    
 
     protected:
-        size_t jumpTo(std::vector<size_t> pos);
-        std::vector<size_t> computeStrides(std::vector<size_t> shps);
+        size_t jumpTo(std::vector<size_t> pos) const;
+        const std::vector<size_t> computeStrides(std::vector<size_t> shps) const;
 
     public:
         Tensor() = default;
@@ -100,13 +97,14 @@ class Tensor {
         double* data();
         const double* data() const;
 
-        std::vector<double> as_vector();
-
+        const std::vector<double> as_vector_const();
+        std::vector<double>& as_vector(); 
         size_t ndim() const;
         std::vector<size_t> get_strides() const;
-        std::vector<size_t> shape() const;
+        const std::vector<size_t>& shape() const;
         size_t size() const;
         bool empty() const;
+        const bool is_contiguous() const;
         Tensor view(std::vector<size_t> new_shape);
 
 //region broadcasting rules
@@ -116,11 +114,11 @@ class Tensor {
         Tensor unsqueeze(size_t axis);
         Tensor squeeze(const std::optional<size_t> axis = std::nullopt);
         Tensor expand(std::vector<size_t> target);
-        Tensor concatenate(const Tensor& b, const size_t axis);
         Tensor mask_filled(const Tensor& mask, double replace);
+        Tensor replace_zero(const Tensor& other);
 
 //region access and modification
-        double at(std::vector<size_t> pos);
+        double at(std::vector<size_t> pos) const;
         void put(std::vector<size_t> pos, double val);
 //endregion access and modification
 
@@ -131,31 +129,30 @@ class Tensor {
         Tensor reshape(std::vector<size_t> new_shape);
         Tensor permute(const std::optional<std::vector<size_t>>& rotaxis = std::nullopt);
         Tensor transpose();
+        std::vector<Tensor>split_uneven(const std::vector<size_t>& split_len, const size_t axis);
+        std::vector<Tensor> chunk(const size_t num_heads, const size_t axis);
 //endregion data-viewing
 
 //region element-wise operations
-        void add_(const Tensor& other){
-            #pragma omp parallel for simd schedule(static)
-            for(size_t i=0; i<size(); i++){
-                basePtr[i] += other.basePtr[i];
-            }
-        }
-
         Tensor operator+ (const Tensor& t);
-        Tensor operator+ (double val);
+        Tensor operator+ (const double val);
         Tensor operator- (const Tensor& t);
-        Tensor operator- (double val);
+        Tensor operator- (const double val);
         Tensor operator* (const Tensor& t) ;
-        Tensor operator* (double val) ;
-        Tensor operator/ (double val) ;
+        Tensor operator* (const double val) ;
+        Tensor operator/ (const double val) ;
         Tensor operator/ (const Tensor& t);
+        Tensor operator+= (const Tensor& t);
+        Tensor operator+= (const double t);
 //endregion element-wise operations
 
 //region reductions
         Tensor sum(const size_t axis);
         Tensor mean(const size_t axis);
         Tensor maximum(const size_t axis);
+        Tensor minimum(const size_t axis);
 //endregion reductions
+//
         //element-wise functions
         Tensor sqrt();
         Tensor log();
@@ -175,7 +172,11 @@ class Tensor {
         Tensor sigmoid();
         Tensor tanh();
         Tensor elu(const double alpha);
-
+        
+        //Initializers
+        void xavier_ud(const size_t fan_in, const size_t fan_out);
+        Tensor dropout(const double p, const bool training, Tensor& mask);
+        //Extra
         void make2d(std::vector<size_t>& shape_list, const size_t axis = 1);
 
         //test operations
@@ -183,19 +184,21 @@ class Tensor {
         void prnt(std::vector<size_t> x);
         void prntd(std::vector<double> x);
 
-        template <typename T>
-        std::string vec_string(std::vector<T> vec){
-            std::ostringstream output;
-            output<<"(";
-            for(size_t i=0; i<vec.size(); i++){
-                output << vec[i];
-                if(i < vec.size()-1) output << ", ";
-            }
-            output<<")";
-            return output.str();
-        }
 };
 
+Tensor concatenate(const std::vector<Tensor>& tensor_list, const size_t axis);
 Tensor dot(Tensor x, Tensor y, const size_t axis);
+
+template <typename T>
+std::string vec_string(std::vector<T> vec){
+    std::ostringstream output;
+    output<<"(";
+    for(size_t i=0; i<vec.size(); i++){
+        output << vec[i];
+        if(i < vec.size()-1) output << ", ";
+    }
+    output<<")";
+    return output.str();
+}
 
 #endif
