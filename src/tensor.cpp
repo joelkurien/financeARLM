@@ -134,7 +134,7 @@ const std::vector<size_t> Tensor::computeStrides(std::vector<size_t> shps) const
 double* Tensor::data() { return basePtr; }
 const double* Tensor::data() const { return basePtr; }
 
-const std::vector<double> Tensor::as_vector_const(){ 
+const std::vector<double> Tensor::as_vector_const() const { 
     if(!valvec.empty())
         return valvec; 
 
@@ -153,6 +153,21 @@ const bool Tensor::is_contiguous() const {
     return strides == expected;
 }
 
+Tensor Tensor::contiguous() const {
+    if(is_contiguous()) return *this;
+     
+    std::vector<double> con_vec;
+    con_vec.reserve(size());
+
+    NDRange range(const_cast<std::vector<size_t>&>(shapes));
+
+    for(const std::vector<size_t>& idx: range){
+        con_vec.push_back(this->at(idx));
+    }
+
+    return Tensor(con_vec, shapes);
+}
+
 std::vector<double>& Tensor::as_vector(){
     return this->valvec;
 } 
@@ -169,7 +184,6 @@ Tensor Tensor::view(std::vector<size_t> new_shape){
     Tensor vw = *this;
     vw.basePtr = this->basePtr;
     vw.shapes = new_shape;
-    vw.strides = computeStrides(new_shape);
     return vw;
 }
 
@@ -243,7 +257,7 @@ Tensor Tensor::unsqueeze(size_t axis){
     size_t new_stride = axis < strides.size() ? strides[axis] : 1;
     new_strides.insert(new_strides.begin()+axis, new_stride);
     
-    return Tensor(basePtr, new_shape, new_strides);
+    return Tensor(this->basePtr, new_shape, new_strides);
 }
 
 Tensor Tensor::expand(std::vector<size_t> target){
@@ -265,27 +279,27 @@ Tensor Tensor::expand(std::vector<size_t> target){
 
 Tensor Tensor::mask_filled(const Tensor& mask, double replace){
     if(mask.size() != size()) throw std::invalid_argument("Mask/Matrix size mismatch");
+    Tensor t = contiguous();
     std::vector<double> n_vec(size());
    
     const double* m_ptr = mask.data();
 
     #pragma omp parallel for simd schedule(static) 
     for(int i=0; i<size(); i++){
-        double val = mask.at(index(i));
-        n_vec[i] = (val == 0.0 ? replace : val);
+        double val = m_ptr[i];
+        n_vec[i] = (val == 0.0 ? replace : t.data()[i]);
     }
     return Tensor(n_vec, shapes);
 }
 
 Tensor Tensor::replace_zero(const Tensor& other){
     if(shapes != other.shapes) throw std::invalid_argument("The 2 matrix shapes are incompatible for replacement" + vec_string(shapes) + " v " + vec_string(other.shapes));
-
+    Tensor t = contiguous();
     std::vector<double> n_vec(size());
 
     #pragma omp parallel for simd schedule(static)
     for(int i=0; i<size(); i++){
-        std::vector<size_t> idx = index(i);
-        n_vec[i] = this->at(idx) == 0.0 ? other.at(idx) : this->at(idx);
+        n_vec[i] = t.data()[i] == 0.0 ? other.data()[i] : t.data()[i];
     }
 
     return Tensor(n_vec, shapes);
@@ -307,10 +321,8 @@ void Tensor::put(std::vector<size_t> pos, double val) {
 // referenced slicing -> the slice is still pointing to the same location as the og tensor
 Tensor Tensor::slice(std::vector<size_t> start, std::vector<size_t> shape, const std::optional<std::vector<size_t>>& _strides){
     std::vector<size_t> actualStrides = _strides.value_or(strides);
-    Tensor slc = *this;
+    Tensor slc(nullptr, shape, actualStrides);
     slc.basePtr = this->basePtr + jumpTo(start);
-    slc.shapes = shape;
-    slc.strides = actualStrides;
     return slc;
 }
 
@@ -332,7 +344,7 @@ Tensor Tensor::permute(const std::optional<std::vector<size_t>>& rotaxis) {
     for(size_t i=0; i<dim; i++){
         size_t axis = rotaxis.has_value() ? rotaxis->at(i) : dim - i - 1;
         new_shape[i] = shapes[axis];
-        new_strides[i] = shapes[axis];
+        new_strides[i] = strides[axis];
     }
     return Tensor(this->basePtr, new_shape, new_strides);
 }
@@ -468,6 +480,8 @@ Tensor Tensor::mean(const size_t axis){
 }
 
 Tensor Tensor::maximum(const size_t axis){
+    Tensor con_t = contiguous();
+    const double* t = con_t.data();
     auto reductions = axis_reduction(axis);
     const std::vector<size_t>& base_idx = std::get<0>(reductions);
     const std::vector<size_t>& reduced_shape = std::get<1>(reductions);
@@ -477,7 +491,7 @@ Tensor Tensor::maximum(const size_t axis){
     for(size_t i=0; i<base_idx.size(); i++){
         double mx = -std::numeric_limits<double>::infinity();
         for(size_t j=0; j<shapes[axis]; j++){
-            double val = basePtr[base_idx[i] + strides[axis]*j];
+            double val = t[base_idx[i] + strides[axis]*j];
             mx = mx < val ? val : mx;
         }
         result[i] = mx;
@@ -486,6 +500,8 @@ Tensor Tensor::maximum(const size_t axis){
 }
 
 Tensor Tensor::minimum(const size_t axis){
+    Tensor con_t = contiguous();
+    const double* t = con_t.data();
     auto reductions = axis_reduction(axis);
     const std::vector<size_t>& base_idx = std::get<0>(reductions);
     const std::vector<size_t>& reduced_shape = std::get<1>(reductions);
@@ -495,7 +511,7 @@ Tensor Tensor::minimum(const size_t axis){
     for(size_t i=0; i<base_idx.size(); i++){
         double mn = std::numeric_limits<double>::infinity();
         for(size_t j=0; j<shapes[axis]; j++){
-            double val = basePtr[base_idx[i] + strides[axis]*j];
+            double val = t[base_idx[i] + strides[axis]*j];
             mn = mn > val ? val : mn;
         }
         result[i] = mn;
@@ -506,44 +522,56 @@ Tensor Tensor::minimum(const size_t axis){
 
 //element-wise functions
 Tensor Tensor::sqrt() {
+    Tensor con_t = contiguous();
+    const double* t = con_t.data();
     std::vector<double> res(size());
 
     #pragma omp parallel for simd schedule(static)
     for(size_t i=0; i<size(); i++){
-        res[i] = std::sqrt(this->at(index(i)));
+        double val = t[i];
+        res[i] = std::sqrt(val);
     }
 
     return Tensor(res, shapes);
 }
 
 Tensor Tensor::log(){
+    Tensor con_t = contiguous();
+    const double* t = con_t.data();
     std::vector<double> res(size());
 
     #pragma omp parallel for simd schedule(static)
     for(size_t i=0; i<size(); i++){
-        res[i] = std::log(this->at(index(i)));
+        double val = t[i];
+        res[i] = std::log(val);
     }
 
     return Tensor(res, shapes);
 }
 
 Tensor Tensor::exp(){
+    Tensor con_t = contiguous();
+    const double* t = con_t.data();
     std::vector<double> res(size());
 
     #pragma omp parallel for simd schedule(static)
     for(size_t i=0; i<size(); i++){
-        res[i] = std::exp(this->at(index(i)));
+        double val = t[i];
+        res[i] = std::exp(val);
     }
 
     return Tensor(res, shapes);
 }
 
 Tensor Tensor::pow(const double n){
+    Tensor con_t = contiguous();
+    const double* t = con_t.data();
     std::vector<double> res(size());
 
     #pragma omp parallel for simd schedule(static)
     for(size_t i=0; i<size(); i++){
-        res[i] = std::pow(this->at(index(i)), n);
+        double val = t[i];
+        res[i] = std::pow(val, n);
     }
 
     return Tensor(res, shapes);
@@ -553,6 +581,8 @@ Tensor Tensor::pow(const double n){
 
 // Softmax function
 Tensor Tensor::softmax(const size_t axis){
+    Tensor con_t = contiguous();
+    const double* t = con_t.data();
     auto reductions = axis_reduction(axis);
     const std::vector<size_t>& base_idx = std::get<0>(reductions);
     const std::vector<size_t>& reduced_shape = std::get<1>(reductions);
@@ -565,23 +595,25 @@ Tensor Tensor::softmax(const size_t axis){
     for(size_t i=0; i<base_idx.size(); i++){
         double mx = -std::numeric_limits<double>::infinity();
         for(size_t j=0; j<sax; j++){
-            double val = basePtr[base_idx[i] + stride*j];
+            double val = t[base_idx[i] + stride*j];
             mx = mx < val ? val : mx;
         }
         double denom = 0;
         for(size_t j=0; j<sax; j++){
-            denom += std::exp(basePtr[base_idx[i] + stride*j] - mx);
+            denom += std::exp(t[base_idx[i] + stride*j] - mx);
         }
         for(size_t j=0; j<sax; j++){
             size_t logi_idx = i*sax+j;
             size_t idx = base_idx[i] + stride*j;
-            result[logi_idx] = std::exp(basePtr[idx] - mx) / denom;
+            result[logi_idx] = std::exp(t[idx] - mx) / denom;
         }
     }
     return Tensor(result, shapes);
 }
 
 Tensor Tensor::log_softmax(const size_t axis){
+    Tensor con_t = contiguous();
+    const double* t = con_t.data();
     auto reductions = axis_reduction(axis);
     const std::vector<size_t>& base_idx = std::get<0>(reductions);
     const std::vector<size_t>& reduced_shape = std::get<1>(reductions);
@@ -594,18 +626,18 @@ Tensor Tensor::log_softmax(const size_t axis){
     for(size_t i=0; i<base_idx.size(); i++){
         double mx = -std::numeric_limits<double>::infinity();
         for(size_t j=0; j<sax; j++){
-            double val = basePtr[base_idx[i] + stride*j];
+            double val = t[base_idx[i] + stride*j];
             mx = mx < val ? val : mx;
         }
         double denom = 0;
         for(size_t j=0; j<sax; j++){
-            denom += std::exp(basePtr[base_idx[i] + stride*j] - mx);
+            denom += std::exp(t[base_idx[i] + stride*j] - mx);
         }
 
         for(size_t j=0; j<sax; j++){
             size_t logi_idx = i*sax + j;
             size_t idx = base_idx[i] + stride*j;
-            result[logi_idx] = basePtr[idx] - mx - std::log(denom);
+            result[logi_idx] = t[idx] - mx - std::log(denom);
         }
     }
     return Tensor(result, shapes);
@@ -613,6 +645,8 @@ Tensor Tensor::log_softmax(const size_t axis){
 
 // Layer Normalization
 Tensor Tensor::layer_norm(Tensor gamma, Tensor beta, const size_t axis){
+    Tensor con_t = contiguous();
+    const double* t = con_t.data();
     auto reductions = axis_reduction(axis);
     const std::vector<size_t>& base_idx = std::get<0>(reductions);
     const std::vector<size_t>& reduced_shape = std::get<1>(reductions);
@@ -625,45 +659,50 @@ Tensor Tensor::layer_norm(Tensor gamma, Tensor beta, const size_t axis){
     for(size_t i=0; i<base_idx.size(); i++){
         double mu = 0, var = 0;
         for(size_t j=0; j<sax; j++){
-            mu += basePtr[base_idx[i] + stride*j];
+            mu += t[base_idx[i] + stride*j];
         }
         mu /= sax;
         for(size_t j=0; j<sax; j++){
-            var += std::pow((basePtr[base_idx[i] + stride*j]-mu),2);
+            var += std::pow((t[base_idx[i] + stride*j]-mu),2);
         }
         var /= sax;
-        double e = 1e-12;
+        double e = 1e-6;
         double inv_std = 1.0 / std::sqrt(var + e);
         for(size_t j=0; j<sax; j++){
-            size_t logi_idx = i*sax + j;
-            double val = basePtr[base_idx[i] + stride*j];
+            size_t idx = base_idx[i] + stride * j;
+            double val = t[idx];
             double normalized = (val-mu) * inv_std;
-            result[logi_idx] = normalized * gamma.data()[i] + beta.data()[j];
+            result[idx] = normalized;
         }
     }
 
-    return Tensor(result, shapes);
+    Tensor res(result, shapes);
+    return (gamma * res) + beta;
 }
 
 Tensor Tensor::relu(){
+    Tensor con_t = contiguous();
+    const double* t = con_t.data();
     std::vector<double> res(size());
-
+    
     #pragma omp parallel for simd schedule(static)
     for(size_t i = 0; i<size(); i++){
-        res[i] = std::max(this->at(index(i)), 0.0);
+        res[i] = std::max(t[i], 0.0);
     }
 
     return Tensor(res, shapes);
 }
 
 Tensor Tensor::gelu(){
+    Tensor con_t = contiguous();
+    const double* t = con_t.data();
     std::vector<double> res(size());
 
     const double constant = std::sqrt(2.0 / std::numbers::pi);
 
     #pragma omp parallel for simd schedule(static)
     for(size_t i = 0; i<size(); i++){
-        double x = this->at(index(i));
+        double x = t[i];
         double cube = x*x*x;
         double inner = constant*(x+0.044715*cube);
         double val = 0.5 * x * (1.0 + std::tanh(inner));
@@ -674,37 +713,39 @@ Tensor Tensor::gelu(){
 }
 
 Tensor Tensor::sigmoid(){
+    Tensor con_t = contiguous();
+    const double* t = con_t.data();
     std::vector<double> res(size());
 
     #pragma omp parallel for simd schedule(static)
     for(size_t i = 0; i<size(); i++){
-        double val = this->at(index(i));
-        res[i] = 1/(1+std::exp(-val));
+        res[i] = 1/(1+std::exp(-t[i]));
     }
-    
+
     return Tensor(res, shapes);
 }
 
 Tensor Tensor::tanh(){
+    Tensor con_t = contiguous();
+    const double* t = con_t.data();
     std::vector<double> res(size());
 
     #pragma omp parallel for simd schedule(static)
     for(size_t i = 0; i<size(); i++){
-        std::vector<size_t> idx = index(i);
-        res[i] = std::tanh(this->at(idx));
+        res[i] = std::tanh(t[i] );
     }
 
     return Tensor(res, shapes);
 }
 
 Tensor Tensor::elu(const double alpha){
+    Tensor con_t = contiguous();
+    const double* t = con_t.data();
     std::vector<double> res(size());
 
     #pragma omp parallel for simd schedule(static)
     for(size_t i = 0; i<size(); i++){
-        std::vector<size_t> idx = index(i);
-        double val_pos = this->at(idx);
-        double val = val_pos > 0.0 ? val_pos : alpha * (std::exp(val_pos-1));
+        double val = t[i] > 0.0 ? basePtr[i] : alpha * (std::exp(t[i]-1));
         res[i] = val;
     }
 
@@ -728,13 +769,17 @@ Tensor Tensor::dropout(const double p, const bool training, Tensor& mask){
 
     std::vector<double> mask_vec(size());
     double scale = 1.0/(1.0 - p);
+    #pragma omp parallel
+    {
+        std::random_device rd;
 
-    std::random_device rd;
-    std::mt19937 gen(rd());
-    std::bernoulli_distribution dist(1.0 - p);
-
-    for(size_t i=0; i<size(); i++){
-        mask_vec[i] = dist(gen) ? scale : 0.0;
+        std::mt19937 gen(rd());
+        std::bernoulli_distribution dist(1.0 - p);
+        
+        #pragma omp for
+        for(size_t i=0; i<size(); i++){
+            mask_vec[i] = dist(gen) ? scale : 0.0;
+        }
     }
 
     mask = Tensor(mask_vec, shape());
@@ -775,7 +820,7 @@ Tensor concatenate(const std::vector<Tensor>& tensor_list, const size_t axis){
         if(conc_shape.size() != tensor_list[idx].ndim()) throw std::invalid_argument("Tensor dimension mismatch");
     }
 
-    if(axis > conc_shape.size()) throw std::invalid_argument("Axis is not a valid dimension");
+    if(axis >= conc_shape.size()) throw std::invalid_argument("Axis is not a valid dimension");
 
     for(size_t idx=1; idx<tensor_list.size(); idx++){
         for(size_t i=0; i<conc_shape.size(); i++){
@@ -806,10 +851,34 @@ Tensor concatenate(const std::vector<Tensor>& tensor_list, const size_t axis){
             size_t axis_val = t.shape()[axis];
             size_t chunk_size = axis_val * right_size;
             
-            const double* t_ptr = t.data() + (left*chunk_size);
+            if(t.is_contiguous()){
+                const double* t_ptr = t.data() + (left*chunk_size);
+                std::memcpy(conc_ptr, t_ptr, chunk_size * sizeof(double));
+                conc_ptr += chunk_size;
+            } else {
+                for(size_t l = 0; l<axis_val; l++){
+                    for(size_t r = 0; r<right_size; r++){
+                        std::vector<size_t> idx(t.ndim());
 
-            std::memcpy(conc_ptr, t_ptr, chunk_size * sizeof(double));
-            conc_ptr += chunk_size;
+                        size_t temp_l = left;
+                        for(int d = (int)axis-1; d >= 0; d--){
+                            idx[d] = temp_l % t.shape()[d];
+                            temp_l /= t.shape()[d];
+                        }
+
+                        idx[axis] = l;
+
+                        size_t temp_r = r;
+                        for(int d = (int)t.ndim()-1; d > (int)axis; d--){
+                            idx[d] = temp_r % t.shape()[d];
+                            temp_r /= t.shape()[d];
+                        }
+
+                        *conc_ptr = t.at(idx);
+                        conc_ptr++;
+                    }
+                }
+            }
         }
     }
     

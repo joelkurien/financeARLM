@@ -45,7 +45,7 @@ NDiterator NDiterator::end(const std::vector<size_t>& shape){
     return NDiterator(shape, true);
 }
 
-NDRange::NDRange(std::vector<size_t>& _shape) : shape(_shape) {}
+NDRange::NDRange(const std::vector<size_t>& _shape) : shape(_shape) {}
 
 NDiterator NDRange::begin() {
     return NDiterator::begin(shape);

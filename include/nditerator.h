@@ -25,7 +25,7 @@ class NDRange {
     private:
         std::vector<size_t> shape;
     public:
-        NDRange(std::vector<size_t>& _shape);
+        NDRange(const std::vector<size_t>& _shape);
 
         NDiterator begin();
         NDiterator end();

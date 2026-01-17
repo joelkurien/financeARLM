@@ -97,7 +97,7 @@ class Tensor {
         double* data();
         const double* data() const;
 
-        const std::vector<double> as_vector_const();
+        const std::vector<double> as_vector_const() const;
         std::vector<double>& as_vector(); 
         size_t ndim() const;
         std::vector<size_t> get_strides() const;
@@ -105,6 +105,7 @@ class Tensor {
         size_t size() const;
         bool empty() const;
         const bool is_contiguous() const;
+        Tensor contiguous() const;
         Tensor view(std::vector<size_t> new_shape);
 
 //region broadcasting rules
