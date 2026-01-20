@@ -3,9 +3,7 @@
 
 #include<vector>
 #include<memory>
-#include<iostream>
 #include<functional>
-#include<algorithm>
 #include<unordered_set>
 #include "tensor.h"
 
@@ -64,16 +62,30 @@ std::shared_ptr<TensorX> layer_norm(std::shared_ptr<TensorX> x, std::shared_ptr<
 std::shared_ptr<TensorX> relu(std::shared_ptr<TensorX> x);
 std::shared_ptr<TensorX> gelu(std::shared_ptr<TensorX> x);
 std::shared_ptr<TensorX> elu(std::shared_ptr<TensorX> x, const double alpha);
+std::shared_ptr<TensorX> sigmoid(std::shared_ptr<TensorX> x);
+std::shared_ptr<TensorX> tanh(std::shared_ptr<TensorX> x);
+std::shared_ptr<TensorX> glu(std::shared_ptr<TensorX> x);
+std::shared_ptr<TensorX> reGlu(std::shared_ptr<TensorX> x);
+
 std::shared_ptr<TensorX> sum(std::shared_ptr<TensorX> x, const size_t axis);
 std::shared_ptr<TensorX> mean(std::shared_ptr<TensorX> x, const size_t axis);
 std::shared_ptr<TensorX> var(std::shared_ptr<TensorX> x, const size_t axis);
+std::shared_ptr<TensorX> maximum(std::shared_ptr<TensorX> x, const size_t axis);
+std::shared_ptr<TensorX> minimum(std::shared_ptr<TensorX> x, const size_t axis);
 
+// std::shared_ptr<TensorX> squeeze(std::shared_ptr<TensorX> x, std::optional<size_t> axis = std::nullopt);
+// std::shared_ptr<TensorX> unsqueeze(std::shared_ptr<TensorX> x, size_t axis);
+// std::shared_ptr<TensorX> expand(std::shared_ptr<TensorX> x, std::vector<size_t> target);
+//
 std::shared_ptr<TensorX> matmul(std::shared_ptr<TensorX> x, std::shared_ptr<TensorX> y);
 std::shared_ptr<TensorX> transpose(std::shared_ptr<TensorX> x);
 std::shared_ptr<TensorX> permute(std::shared_ptr<TensorX> x, const std::optional<std::vector<size_t>>& rotaxis = std::nullopt);
 std::shared_ptr<TensorX> reshape(std::shared_ptr<TensorX> x, std::vector<size_t> new_shape);
+std::vector<std::shared_ptr<TensorX>> chunk(std::shared_ptr<TensorX> x, size_t num_heads, size_t axis);
 std::shared_ptr<TensorX> concat(std::vector<std::shared_ptr<TensorX>> x, const size_t axis);
 std::shared_ptr<TensorX> slice(std::shared_ptr<TensorX> x, std::vector<size_t> start, std::vector<size_t> shape, const std::optional<std::vector<size_t>>& _strides = std::nullopt); 
 std::shared_ptr<TensorX> masked_fill(std::shared_ptr<TensorX> x, const Tensor& mask, double replace);
+std::shared_ptr<TensorX> replace(const Tensor& mask, std::shared_ptr<TensorX> x, std::shared_ptr<TensorX> y);
 
+// std::shared_ptr<TensorX> dropout(std::shared_ptr<TensorX> x, const double p, const bool training, Tensor& mask);
 #endif

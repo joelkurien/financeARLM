@@ -116,7 +116,6 @@ class Tensor {
         Tensor squeeze(const std::optional<size_t> axis = std::nullopt);
         Tensor expand(std::vector<size_t> target);
         Tensor mask_filled(const Tensor& mask, double replace);
-        Tensor replace_zero(const Tensor& other);
 
 //region access and modification
         double at(std::vector<size_t> pos) const;
@@ -125,33 +124,37 @@ class Tensor {
 
 //region data-viewing
         // referenced slicing -> the slice is still pointing to the same location as the og tensor
-        Tensor slice(std::vector<size_t> start, std::vector<size_t> shape, const std::optional<std::vector<size_t>>& _strides = std::nullopt);
+        Tensor slice(std::vector<size_t> start, std::vector<size_t> shape, const std::optional<std::vector<size_t>>& _strides = std::nullopt); //works
         Tensor slice(size_t start, size_t end, std::vector<size_t> shape_list);
-        Tensor reshape(std::vector<size_t> new_shape);
-        Tensor permute(const std::optional<std::vector<size_t>>& rotaxis = std::nullopt);
-        Tensor transpose();
-        std::vector<Tensor>split_uneven(const std::vector<size_t>& split_len, const size_t axis);
-        std::vector<Tensor> chunk(const size_t num_heads, const size_t axis);
+        Tensor reshape(std::vector<size_t> new_shape); //works
+        Tensor permute(const std::optional<std::vector<size_t>>& rotaxis = std::nullopt); //works
+        Tensor transpose(); //works
+        std::vector<Tensor>split_uneven(const std::vector<size_t>& split_len, const size_t axis); //works
+        std::vector<Tensor> chunk(const size_t num_heads, const size_t axis); //works
 //endregion data-viewing
 
 //region element-wise operations
-        Tensor operator+ (const Tensor& t);
-        Tensor operator+ (const double val);
-        Tensor operator- (const Tensor& t);
-        Tensor operator- (const double val);
-        Tensor operator* (const Tensor& t) ;
-        Tensor operator* (const double val) ;
-        Tensor operator/ (const double val) ;
-        Tensor operator/ (const Tensor& t);
-        Tensor operator+= (const Tensor& t);
-        Tensor operator+= (const double t);
+        Tensor operator+ (const Tensor& t); //works
+        Tensor operator+ (const double val); //works
+        Tensor operator- (const Tensor& t); //works
+        Tensor operator- (const double val); //works
+        Tensor operator* (const Tensor& t) ; //works
+        Tensor operator* (const double val); //works
+        Tensor operator/ (const double val); //works
+        Tensor operator/ (const Tensor& t); //works
+        Tensor operator+= (const Tensor& t); //works
+        Tensor operator+= (const double t); //works
+        Tensor operator== (const Tensor& t);
+        Tensor operator> (const Tensor& t);
+        Tensor operator< (const Tensor& t);
+        Tensor operator!= (const Tensor& t);
 //endregion element-wise operations
 
 //region reductions
-        Tensor sum(const size_t axis);
-        Tensor mean(const size_t axis);
-        Tensor maximum(const size_t axis);
-        Tensor minimum(const size_t axis);
+        Tensor sum(const size_t axis); //works
+        Tensor mean(const size_t axis); //works
+        Tensor maximum(const size_t axis); //works
+        Tensor minimum(const size_t axis); //works
 //endregion reductions
 //
         //element-wise functions
@@ -187,7 +190,8 @@ class Tensor {
 
 };
 
-Tensor concatenate(const std::vector<Tensor>& tensor_list, const size_t axis);
+Tensor replace(const Tensor& mask, const Tensor& a, const Tensor& b);
+Tensor concatenate(const std::vector<Tensor>& tensor_list, const size_t axis); //works
 Tensor dot(Tensor x, Tensor y, const size_t axis);
 
 template <typename T>

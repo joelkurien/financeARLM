@@ -260,6 +260,28 @@ Tensor Tensor::unsqueeze(size_t axis){
     return Tensor(this->basePtr, new_shape, new_strides);
 }
 
+Tensor Tensor::squeeze(const std::optional<size_t> axis){
+    std::vector<size_t> new_shape;
+    new_shape.reserve(dim);
+    size_t ax = axis.value_or(-1);
+    if(ax == -1){
+        for(size_t shp: shapes){
+            if(shp != 1) new_shape.push_back(shp);
+        }
+    }
+    else {
+        if(ax < 0 || ax >= dim) throw std::invalid_argument("Axis is out of bounds");
+        size_t i = 0;
+        for(size_t shp: shapes){
+            if(i != axis || shp != 1) {
+                new_shape.push_back(shp);
+            }
+            i++;
+        }
+    }
+    return Tensor(this->basePtr, new_shape);
+}
+
 Tensor Tensor::expand(std::vector<size_t> target){
     Tensor view = *this;
     std::vector<size_t> new_strides = strides;
@@ -292,17 +314,20 @@ Tensor Tensor::mask_filled(const Tensor& mask, double replace){
     return Tensor(n_vec, shapes);
 }
 
-Tensor Tensor::replace_zero(const Tensor& other){
-    if(shapes != other.shapes) throw std::invalid_argument("The 2 matrix shapes are incompatible for replacement" + vec_string(shapes) + " v " + vec_string(other.shapes));
-    Tensor t = contiguous();
-    std::vector<double> n_vec(size());
+Tensor replace(const Tensor& mask, const Tensor& a, const Tensor& b){
+    if(a.shape() != b.shape() || a.shape() != mask.shape() || mask.shape() != b.shape()) 
+        throw std::invalid_argument("The 2 matrix shapes are incompatible for replacement" + vec_string(a.shape()) + " v " + vec_string(b.shape()) + " v " + vec_string(mask.shape()));
+    
+    Tensor x = a.contiguous();
+    Tensor y = b.contiguous();
+    std::vector<double> n_vec(mask.size());
 
     #pragma omp parallel for simd schedule(static)
-    for(int i=0; i<size(); i++){
-        n_vec[i] = t.data()[i] == 0.0 ? other.data()[i] : t.data()[i];
+    for(int i=0; i<mask.size(); i++){
+        n_vec[i] = mask.data()[i] == 0.0 ? y.data()[i] : x.data()[i];
     }
 
-    return Tensor(n_vec, shapes);
+    return Tensor(n_vec, mask.shape());
 }
 
 //region access and modification
@@ -390,6 +415,9 @@ std::vector<Tensor> Tensor::chunk(const size_t num_chunks, const size_t axis) {
         }
     }
 
+    std::cout<<"Split sizes matrix: ";
+    vec_string(split_sizes);
+
     return this->split_uneven(split_sizes, axis);
 }
 //endregion data-viewing
@@ -441,6 +469,23 @@ Tensor Tensor::operator+= (const Tensor& t){
     return *this;
 }
 
+Tensor Tensor::operator== (const Tensor& t){
+   return tensorOp(t, [](double a, double b){ return a==b; }); 
+}
+
+
+Tensor Tensor::operator> (const Tensor& t){
+   return tensorOp(t, [](double a, double b){ return a>b; }); 
+}
+
+
+Tensor Tensor::operator< (const Tensor& t){
+   return tensorOp(t, [](double a, double b){ return a<b; }); 
+}
+
+Tensor Tensor::operator!= (const Tensor& t){
+    return tensorOp(t, [](double a, double b){ return a != b; });
+}
 //endregion element-wise operations
 
 //region reductions
@@ -732,7 +777,7 @@ Tensor Tensor::tanh(){
 
     #pragma omp parallel for simd schedule(static)
     for(size_t i = 0; i<size(); i++){
-        res[i] = std::tanh(t[i] );
+        res[i] = std::tanh(t[i]);
     }
 
     return Tensor(res, shapes);

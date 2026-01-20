@@ -92,8 +92,19 @@ int main(){
 
     // 3. Forward Pass
     double replace_val = -1e9;
+    std::vector<size_t> p = {1,0};
+    Tensor r = a->get_data();
+    Tensor f = r.maximum(1);
+    Tensor msk = r == f;
+    r.prntd(r.as_vector_const());
+    f.prntd(f.as_vector_const());
+    std::cout<<"Mask of r and f ";
+    msk.prntd(msk.as_vector_const());
 
-    std::shared_ptr<TensorX> z = concat({a, c}, 1);
+
+    std::shared_ptr<TensorX> r_ = tensor::create(r, true);
+    std::shared_ptr<TensorX> z = divide(r_, c);
+    std::cout<<"Concatenated matrix: ";
     z->get_data().prntd(z->get_data().as_vector());
     std::shared_ptr<TensorX> b = sum(z, 1);
     std::shared_ptr<TensorX> l = sum(b,0);
@@ -101,6 +112,12 @@ int main(){
     //l->get_data().prntd(l->get_data().as_vector());
     std::cout<<"z grad output"<<std::endl; 
     l->get_data().prntd(z->get_grad().as_vector());
+
+    std::cout<<"b data output"<<std::endl;
+    b->get_data().prntd(b->get_data().as_vector());
+
+    std::cout<<"l data output"<<std::endl;
+    l->get_data().prntd(l->get_data().as_vector());
 
     std::cout<<"a grad output"<<std::endl;
     l->get_data().prntd(a->get_grad().as_vector());
