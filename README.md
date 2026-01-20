@@ -57,9 +57,14 @@ Added autograd for Layer normalization but there are some issues in backward pro
 **Day 7 - Fixed Layer Norm**
 Fixed the backpropagation of layer normalization, the issue was that the gradient of the result will of shape nxm - but the operands that achieved the result might be of shape nxm and 1xm, so the gradients for the two operands should be different, but initially we were considering the shapes of the two operands as the same which was causing repeated addition. To resolve this we created a unbroadcasting function that converts the gradient back to the operand shape (1xm) so that there is no repeated operation being performed. This took a large chunk of my time, may be later(tmrw/day after) I may complete the loss functions - I will largely focus on cross entropy as creating a language based transformer we are more focused on alphabet classification over regressive analysis. Maybe later we may implement MSE and MAD as well.
 
+**Day I dont know**
+I got fed up with the errors and gave up, now back at it, tried to fix most of it and officially I would like to announce ***I, a fucking programming noob*** have successfully implemented generic pytorch from scratch in C++, wooooooooooooooooooo.
+
+
 ## Backtesting Engine
 
 Designed and implemented the foundation of a custom backtesting engine intended for seamless integration with the ARLM, enabling direct evaluation of strategy outputs generated from financial text analysis.
+
 
 
 
