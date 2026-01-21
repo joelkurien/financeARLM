@@ -250,7 +250,6 @@ Tensor Tensor::singleton_rule(const Tensor& t){
 }
 
 Tensor Tensor::unsqueeze(size_t axis){
-    Tensor view = *this;
     std::vector<size_t> new_shape = shapes;
     std::vector<size_t> new_strides = strides;
     new_shape.insert(new_shape.begin()+axis, 1);
@@ -262,11 +261,18 @@ Tensor Tensor::unsqueeze(size_t axis){
 
 Tensor Tensor::squeeze(const std::optional<size_t> axis){
     std::vector<size_t> new_shape;
+    std::vector<size_t> new_stride;
     new_shape.reserve(dim);
+    new_stride.reserve(dim);
     size_t ax = axis.value_or(-1);
     if(ax == -1){
+        size_t i = 0;
         for(size_t shp: shapes){
-            if(shp != 1) new_shape.push_back(shp);
+            if(shp != 1) {
+                new_shape.push_back(shp);
+                new_stride.push_back(strides[i]);
+            }
+            i++;
         }
     }
     else {
@@ -275,15 +281,15 @@ Tensor Tensor::squeeze(const std::optional<size_t> axis){
         for(size_t shp: shapes){
             if(i != axis || shp != 1) {
                 new_shape.push_back(shp);
+                new_stride.push_back(strides[i]);
             }
             i++;
         }
     }
-    return Tensor(this->basePtr, new_shape);
+    return Tensor(this->basePtr, new_shape, new_stride);
 }
 
 Tensor Tensor::expand(std::vector<size_t> target){
-    Tensor view = *this;
     std::vector<size_t> new_strides = strides;
     if(shape_check(target)){
         for(size_t i=0; i<target.size(); i++){
@@ -295,7 +301,7 @@ Tensor Tensor::expand(std::vector<size_t> target){
     // view.shapes = target;
     // view.strides = new_strides;
     // return view;
-    return Tensor(basePtr, target, new_strides);
+    return Tensor(this->basePtr, target, new_strides);
 }
 
 

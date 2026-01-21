@@ -73,10 +73,10 @@ std::shared_ptr<TensorX> var(std::shared_ptr<TensorX> x, const size_t axis);
 std::shared_ptr<TensorX> maximum(std::shared_ptr<TensorX> x, const size_t axis);
 std::shared_ptr<TensorX> minimum(std::shared_ptr<TensorX> x, const size_t axis);
 
-// std::shared_ptr<TensorX> squeeze(std::shared_ptr<TensorX> x, std::optional<size_t> axis = std::nullopt);
-// std::shared_ptr<TensorX> unsqueeze(std::shared_ptr<TensorX> x, size_t axis);
-// std::shared_ptr<TensorX> expand(std::shared_ptr<TensorX> x, std::vector<size_t> target);
-//
+std::shared_ptr<TensorX> squeeze(std::shared_ptr<TensorX> x, std::optional<size_t> axis = std::nullopt);
+std::shared_ptr<TensorX> unsqueeze(std::shared_ptr<TensorX> x, size_t axis);
+std::shared_ptr<TensorX> expand(std::shared_ptr<TensorX> x, std::vector<size_t> target);
+
 std::shared_ptr<TensorX> matmul(std::shared_ptr<TensorX> x, std::shared_ptr<TensorX> y);
 std::shared_ptr<TensorX> transpose(std::shared_ptr<TensorX> x);
 std::shared_ptr<TensorX> permute(std::shared_ptr<TensorX> x, const std::optional<std::vector<size_t>>& rotaxis = std::nullopt);
@@ -87,5 +87,7 @@ std::shared_ptr<TensorX> slice(std::shared_ptr<TensorX> x, std::vector<size_t> s
 std::shared_ptr<TensorX> masked_fill(std::shared_ptr<TensorX> x, const Tensor& mask, double replace);
 std::shared_ptr<TensorX> replace(const Tensor& mask, std::shared_ptr<TensorX> x, std::shared_ptr<TensorX> y);
 
-// std::shared_ptr<TensorX> dropout(std::shared_ptr<TensorX> x, const double p, const bool training, Tensor& mask);
+std::shared_ptr<TensorX> dropout(std::shared_ptr<TensorX> x, const double p, const bool training, Tensor& mask);
+// pinball loss
 #endif
+

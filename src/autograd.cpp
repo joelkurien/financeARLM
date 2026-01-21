@@ -321,6 +321,61 @@ std::shared_ptr<TensorX> sum(std::shared_ptr<TensorX> x, const size_t axis){
     return z;
 }
 
+std::shared_ptr<TensorX> squeeze(std::shared_ptr<TensorX> x, std::optional<size_t> axis){
+    Tensor result = x->get_data().squeeze(axis);
+
+    std::shared_ptr<TensorX> z = std::make_shared<TensorX>(result, true);
+
+    auto backward_fn = [x, z, axis](){
+        Tensor grad_z = z->get_grad();
+        size_t ax = axis.value_or(0);
+        Tensor grad_x = grad_z.unsqueeze(ax);
+        x->accumulate(grad_x);
+    };
+
+    std::shared_ptr<Autograd> autograd = std::make_shared<Autograd>(backward_fn, std::vector{x});
+    z->set_autograd_fn(autograd);
+    return z;
+}
+
+std::shared_ptr<TensorX> unsqueeze(std::shared_ptr<TensorX> x, size_t axis){
+    Tensor result = x->get_data().unsqueeze(axis);
+
+    std::shared_ptr<TensorX> z = std::make_shared<TensorX>(result, true);
+
+    auto backward_fn = [x, z, axis](){
+        Tensor grad_z = z->get_grad();
+        Tensor grad_x = grad_z.squeeze(axis);
+        x->accumulate(grad_x);
+    };
+
+    std::shared_ptr<Autograd> autograd = std::make_shared<Autograd>(backward_fn, std::vector{x});
+    z->set_autograd_fn(autograd);
+    return z;
+}
+
+std::shared_ptr<TensorX> expand(std::shared_ptr<TensorX> x, std::vector<size_t> target){
+    Tensor result = x->get_data().expand(target);
+
+    std::shared_ptr<TensorX> z = std::make_shared<TensorX>(result, true);
+
+    auto backward_fn = [x, z](){
+        Tensor grad_z = z->get_grad();
+        Tensor grad_x = grad_z;
+        for(size_t i=0; i<grad_x.ndim(); i++){
+            if(x->get_data().shape()[i] == 1 && grad_x.shape()[i] > 1){
+                grad_x = grad_x.sum(i);
+            }
+        }
+        x->accumulate(grad_x);
+    };
+
+    std::shared_ptr<Autograd> autograd = std::make_shared<Autograd>(backward_fn, std::vector{x});
+    z->set_autograd_fn(autograd);
+    return z;
+}
+
+
 std::shared_ptr<TensorX> mean(std::shared_ptr<TensorX> x, const size_t axis){
     Tensor result = x->get_data().mean(axis);
 
@@ -761,8 +816,29 @@ std::shared_ptr<TensorX> pow(std::shared_ptr<TensorX> x, const double n){
 
 }
 
+std::shared_ptr<TensorX> dropout(std::shared_ptr<TensorX> x, const double p, const bool training, Tensor& mask){
+    if(!training || p <= 0.0) return x;
 
+    Tensor result = x->get_data().dropout(p, training, mask);
+    std::shared_ptr<TensorX> z = std::make_shared<TensorX>(result, true);
 
+    auto backward_fn = [x, z, mask](){
+        Tensor grad_z = z->get_grad();
+        Tensor grad_x = grad_z * mask;
+        x->accumulate(grad_x);
+    };
 
+    std::shared_ptr<Autograd> autograd = std::make_shared<Autograd>(backward_fn, std::vector{x});
+    z->set_autograd_fn(autograd);
+    return z;
+}
+
+std::shared_ptr<TensorX> pinball_loss(std::shared_ptr<TensorX> y, std::shared_ptr<TensorX> y_pred, const double tau){
+    if(tau < 0 || tau > 1) throw std::invalid_argument("Tau should lie in the range from 0 - 1");
+    std::shared_ptr<TensorX> success = multiply(subtract(y, y_pred), tau);
+    std::shared_ptr<TensorX> failure = multiply(subtract(y, y_pred), 1-tau);
+    std::shared_ptr<TensorX> result = max(success, failure);
+    return result;
+}
 
 
