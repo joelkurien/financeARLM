@@ -60,10 +60,19 @@ Fixed the backpropagation of layer normalization, the issue was that the gradien
 **Day I dont know**
 I got fed up with the errors and gave up, now back at it, tried to fix most of it and officially I would like to announce ***I, a fucking programming noob*** have successfully implemented generic pytorch from scratch in C++, wooooooooooooooooooo.
 
+**Day I dont know + 2**
+I fixed further issues and added some mini test-cases lazy to update it, will update it later
+
+## Neural Networks (C++)
+
+**Day 1**
+Created my first neural layers in C++ - Linear Layer, and some activation layers like Relu, GLU, ELU, Tanh, Sigmoid. This is very cool, after implementation of all the neural networks, my wish is to port it to python and develop a small application in python for using the model.
+
 
 ## Backtesting Engine
 
 Designed and implemented the foundation of a custom backtesting engine intended for seamless integration with the ARLM, enabling direct evaluation of strategy outputs generated from financial text analysis.
+
 
 
 
