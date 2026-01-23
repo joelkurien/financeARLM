@@ -381,8 +381,11 @@ Tensor Tensor::permute(const std::optional<std::vector<size_t>>& rotaxis) {
 }
 
 Tensor Tensor::transpose(){
-    return permute();
-}
+    std::vector<size_t> new_shape = shapes;    
+    std::vector<size_t> new_strides = strides;
+    std::swap(new_shape[dim-1], new_shape[dim-2]);
+    std::swap(new_strides[dim-1], new_strides[dim-2]);
+    return Tensor(this->basePtr, new_shape, new_strides);}
 
 std::vector<Tensor> Tensor::split_uneven(const std::vector<size_t>& split_len, const size_t axis){
     if(axis < 0 || axis >= shapes.size()) throw std::invalid_argument("Axis value is not a valid shape index - Shape of matrix: "+vec_string(shapes));

@@ -11,6 +11,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 add_compile_options(-fmax-errors=2)
 
 include_directories(${PROJECT_SOURCE_DIR}/include)
+include_directories(${PROJECT_SOURCE_DIR}/nnets)
 
 find_package(OpenMP REQUIRED)
 find_package(BLAS REQUIRED)
@@ -28,4 +29,34 @@ add_executable(financeARLM
     src/nditerator.cpp
 )
 
-target_link_libraries(financeARLM PRIVATE OpenMP::OpenMP_CXX ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES})
+target_link_libraries(financeARLM 
+    PRIVATE 
+    OpenMP::OpenMP_CXX 
+    ${BLAS_LIBRARIES} 
+    ${LAPACK_LIBRARIES}
+)
+
+
+option(BUILD_TESTS "Test Builds" OFF)
+
+if(BUILD_TESTS)
+    enable_testing()
+
+    add_executable(test_files
+        test_files/autograd_test.cpp
+        
+        src/autograd.cpp
+        src/tensor.cpp
+        src/MatrixMultiply.cpp
+        src/nditerator.cpp
+    )
+
+    target_link_libraries(test_files
+        PRIVATE
+        OpenMP::OpenMP_CXX
+        ${BLAS_LIBRARIES}
+        ${LAPACK_LIBRARIES}
+    )
+
+    add_test(NAME test_files COMMAND test_files)
+endif()

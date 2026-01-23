@@ -312,7 +312,8 @@ std::shared_ptr<TensorX> sum(std::shared_ptr<TensorX> x, const size_t axis){
 
     auto backward_fn = [x,z, axis](){
         Tensor grad_z = z->get_grad();
-        Tensor res = grad_z.expand(x->get_data().shape());
+        Tensor res_unq = grad_z.unsqueeze(axis);
+        Tensor res = res_unq.expand(x->get_data().shape());
         x->accumulate(res);
     };
 
@@ -520,7 +521,7 @@ std::shared_ptr<TensorX> sigmoid(std::shared_ptr<TensorX> x){
 }
 
 std::shared_ptr<TensorX> tanh(std::shared_ptr<TensorX> x){
-    Tensor result = x->get_data().sigmoid();
+    Tensor result = x->get_data().tanh();
 
     std::shared_ptr<TensorX> z = std::make_shared<TensorX>(result, true);
 

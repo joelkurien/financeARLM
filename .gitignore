@@ -9,3 +9,5 @@ main
 
 *.log
 .clangd
+
+Testing/

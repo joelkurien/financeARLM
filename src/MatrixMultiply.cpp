@@ -76,7 +76,10 @@ Tensor MatrixMul::broadcast_multiplication(const Tensor& a, const Tensor& b){
     return c;
 }
 
-Tensor MatrixMul::matmul(Tensor a, Tensor b){
+Tensor MatrixMul::matmul(Tensor x, Tensor y){
+    Tensor a = x.contiguous();
+    Tensor b = y.contiguous();
+
     Tensor c;
     const std::vector<size_t> shape_a = a.shape();
     const std::vector<size_t> shape_b = b.shape();
