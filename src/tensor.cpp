@@ -840,26 +840,6 @@ Tensor Tensor::dropout(const double p, const bool training, Tensor& mask){
     return *this * mask;
 }
 
-//test operations
-void Tensor::show(){
-    for(int i=0; i<size(); i++)
-        std::cout<<*(basePtr+i)<<" ";
-}
-
-void Tensor::prnt(std::vector<size_t> x){
-    for(auto e: x){
-        std::cout<<e<<" ";
-    }
-    std::cout<<std::endl;
-}
-
-void Tensor::prntd(std::vector<double> x){
-    for(auto e: x){
-        std::cout<<e<<" ";
-    }
-    std::cout<<std::endl;
-}
-
 void Tensor::make2d(std::vector<size_t>& shape_list, const size_t axis){
     if(shape_list.size() == 1 && axis == 1)
         shape_list.push_back(1);
@@ -942,4 +922,25 @@ Tensor concatenate(const std::vector<Tensor>& tensor_list, const size_t axis){
 Tensor dot(Tensor x, Tensor y, const size_t axis){
     Tensor b = (x*y).sum(axis).unsqueeze(axis);
     return b;
+}
+
+Tensor ones(std::vector<size_t> shape){
+    size_t n_dims = std::accumulate(shape.begin(), shape.end(), size_t{1}, std::multiplies<size_t>());
+
+    std::vector<double> valvec(n_dims, 1);
+    return Tensor(valvec, shape);
+}
+
+void prnt(std::vector<size_t> x){
+    for(auto e: x){
+        std::cout<<e<<" ";
+    }
+    std::cout<<std::endl;
+}
+
+void prntd(std::vector<double> x){
+    for(auto e: x){
+        std::cout<<e<<" ";
+    }
+    std::cout<<std::endl;
 }

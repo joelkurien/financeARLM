@@ -15,6 +15,15 @@ class ReLU : public RootLayer {
         ~ReLU() override = default;
 };
 
+class GeLU : public RootLayer {
+    public:
+        NO_ATTRIBUTES
+        virtual std::shared_ptr<TensorX> forward(std::shared_ptr<TensorX> input) override {
+            return gelu(input);
+        }
+        ~GeLU() override = default;
+};
+
 class Sigmoid : public RootLayer {
     public:
         NO_ATTRIBUTES
@@ -67,5 +76,20 @@ class ELU : public RootLayer {
         }
 
         ~ELU() override = default;
+};
+
+class Softmax : public RootLayer {
+    size_t axis;
+    bool is_stable;
+    public:
+        NO_ATTRIBUTES
+        Softmax(size_t a, bool stable) 
+            : axis(a), is_stable(stable) {}
+
+        virtual std::shared_ptr<TensorX> forward(std::shared_ptr<TensorX> input) override {
+            return is_stable ? log_softmax(input, axis) : softmax(input, axis);
+        }
+
+        ~Softmax() override = default;
 };
 #endif

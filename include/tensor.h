@@ -182,17 +182,15 @@ class Tensor {
         Tensor dropout(const double p, const bool training, Tensor& mask);
         //Extra
         void make2d(std::vector<size_t>& shape_list, const size_t axis = 1);
-
-        //test operations
-        void show();
-        void prnt(std::vector<size_t> x);
-        void prntd(std::vector<double> x);
-
 };
 
 Tensor replace(const Tensor& mask, const Tensor& a, const Tensor& b);
 Tensor concatenate(const std::vector<Tensor>& tensor_list, const size_t axis); //works
 Tensor dot(Tensor x, Tensor y, const size_t axis);
+
+Tensor ones(std::vector<size_t> shape);
+void prnt(std::vector<size_t> x);
+void prntd(std::vector<double> x);
 
 template <typename T>
 std::string vec_string(std::vector<T> vec){
