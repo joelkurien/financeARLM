@@ -68,10 +68,17 @@ I fixed further issues and added some mini test-cases lazy to update it, will up
 **Day 1**
 Created my first neural layers in C++ - Linear Layer, and some activation layers like Relu, GLU, ELU, Tanh, Sigmoid. This is very cool, after implementation of all the neural networks, my wish is to port it to python and develop a small application in python for using the model.
 
+**Day 2**  
+Created the Gated Residual Network and it works wahoo. I have created my first proper deep learning neural network without the help of AI, all me and it was fucking hard, I hate C++ from my very core, it is extremely hard, I don't understand vtables, referencing seg and core faults. Someone save me from this hellhole.
+
+**Day 3**  
+I forgot to write my updates yesterday, so I am writing all my updates today, I decided today to be a simple bug fixing session on my GRN network. Fixed bug issues related to vtables (Had to properly define virtual functions in my NN layers). Fixed segmentation faults in my model (I don't know what fixed it but it magically got fixed), and now I have a working GRN network to do jack shit.  Next, I will try to work in the Variable Selection Network in fucking C++. ;(
+
 
 ## Backtesting Engine
 
 Designed and implemented the foundation of a custom backtesting engine intended for seamless integration with the ARLM, enabling direct evaluation of strategy outputs generated from financial text analysis.
+
 
 
 
