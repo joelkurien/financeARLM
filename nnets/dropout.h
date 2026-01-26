@@ -15,7 +15,13 @@ class Dropout : RootLayer {
         
         virtual std::shared_ptr<TensorX> forward(std::shared_ptr<TensorX> input) override{
             Tensor mask = Tensor(input->get_data().shape());
-            return dropout(input, prob, true, mask);
+            try{
+                return dropout(input, prob, true, mask);
+            }
+            catch(const std::exception& err){
+                std::cout<<"Error in dropout layer: "<<err.what()<<std::endl;
+            }
+            return input;
         }
 };
 

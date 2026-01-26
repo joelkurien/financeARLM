@@ -424,9 +424,6 @@ std::vector<Tensor> Tensor::chunk(const size_t num_chunks, const size_t axis) {
         }
     }
 
-    std::cout<<"Split sizes matrix: ";
-    vec_string(split_sizes);
-
     return this->split_uneven(split_sizes, axis);
 }
 //endregion data-viewing
@@ -810,7 +807,7 @@ void Tensor::xavier_ud(const size_t fan_in, const size_t fan_out){
     double limit = std::sqrt(6.0 / (double)(fan_in + fan_out));
 
     std::random_device rd;
-    std::mt19937 gen(rd());
+    std::mt19937 gen(42);
     std::uniform_real_distribution<double> dist(-limit, limit);
 
     for(size_t i=0; i<size(); i++){
@@ -827,7 +824,7 @@ Tensor Tensor::dropout(const double p, const bool training, Tensor& mask){
     {
         std::random_device rd;
 
-        std::mt19937 gen(rd());
+        std::mt19937 gen(42);
         std::bernoulli_distribution dist(1.0 - p);
         
         #pragma omp for

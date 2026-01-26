@@ -12,6 +12,8 @@ add_compile_options(-fmax-errors=2)
 
 include_directories(${PROJECT_SOURCE_DIR}/include)
 include_directories(${PROJECT_SOURCE_DIR}/nnets)
+include_directories(${PROJECT_SOURCE_DIR}/nnets/networks)
+include_directories(${PROJECT_SOURCE_DIR}/nnets/optimizers)
 
 find_package(OpenMP REQUIRED)
 find_package(BLAS REQUIRED)

@@ -64,7 +64,7 @@ std::shared_ptr<TensorX> gelu(std::shared_ptr<TensorX> x);
 std::shared_ptr<TensorX> elu(std::shared_ptr<TensorX> x, const double alpha);
 std::shared_ptr<TensorX> sigmoid(std::shared_ptr<TensorX> x);
 std::shared_ptr<TensorX> tanh(std::shared_ptr<TensorX> x);
-std::shared_ptr<TensorX> glu(std::shared_ptr<TensorX> x);
+std::shared_ptr<TensorX> glu(std::shared_ptr<TensorX> x, size_t axis);
 std::shared_ptr<TensorX> reGlu(std::shared_ptr<TensorX> x);
 
 std::shared_ptr<TensorX> sum(std::shared_ptr<TensorX> x, const size_t axis);

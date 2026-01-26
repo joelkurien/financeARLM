@@ -83,6 +83,7 @@ class Tensor {
         const std::vector<size_t> computeStrides(std::vector<size_t> shps) const;
 
     public:
+        const size_t dimens = dim;
         Tensor() = default;
         Tensor(std::vector<size_t> shape_list);
         Tensor(std::vector<double> vec, std::vector<size_t> shape_list);
@@ -202,6 +203,16 @@ std::string vec_string(std::vector<T> vec){
     }
     output<<")";
     return output.str();
+}
+
+inline Tensor arange(std::initializer_list<size_t> list){
+    std::vector<size_t> shapes(list);
+    Tensor tensor(shapes);
+    double i=1;
+    for(std::vector<size_t> idx: NDRange(tensor.shape())){
+        tensor.put(idx, i++);
+    }
+    return tensor;
 }
 
 #endif
