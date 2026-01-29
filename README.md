@@ -74,10 +74,14 @@ Created the Gated Residual Network and it works wahoo. I have created my first p
 **Day 3**  
 I forgot to write my updates yesterday, so I am writing all my updates today, I decided today to be a simple bug fixing session on my GRN network. Fixed bug issues related to vtables (Had to properly define virtual functions in my NN layers). Fixed segmentation faults in my model (I don't know what fixed it but it magically got fixed), and now I have a working GRN network to do jack shit.  Next, I will try to work in the Variable Selection Network in fucking C++. ;(
 
+**Day 4**  
+Create the Variable Selection Network, the network works fine at least mathematically for 3D tensors but for some reasons does not work for 2D tensors due to some shape handling issue. Need to look into that. Overall couple more layers left and we will port the c++ librarires to python to build a useable application for my library.
+
 
 ## Backtesting Engine
 
 Designed and implemented the foundation of a custom backtesting engine intended for seamless integration with the ARLM, enabling direct evaluation of strategy outputs generated from financial text analysis.
+
 
 
 
