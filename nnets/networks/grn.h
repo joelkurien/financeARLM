@@ -12,15 +12,16 @@
 /*
  * Gated Residual Network
  * */
-class GRN : RootLayer {
+class GRN : public RootLayer {
     size_t nodes;
+    double dropout_rate;
     public:
-        GRN(size_t units): RootLayer(), nodes(units) {};
+        GRN(size_t units, double dr): RootLayer(), nodes(units), dropout_rate(dr) {};
 
         Linear linear_layer_1{nodes, true};
         ELU elu_layer{1};
         Linear linear_layer_2;
-        Dropout dropout_layer{0.3};
+        Dropout dropout_layer{dropout_rate};
         GLU glu_layer;
         LayerNormalization layer_norm;
 
@@ -41,13 +42,14 @@ class GRN : RootLayer {
 
         virtual std::vector<std::shared_ptr<TensorX>> parameters() override {
             std::vector<std::shared_ptr<TensorX>> params;
-            std::vector<std::shared_ptr<TensorX>> l1_params = linear_layer_1.parameters();
-            std::vector<std::shared_ptr<TensorX>> l2_params = linear_layer_2.parameters();
-            std::vector<std::shared_ptr<TensorX>> norm_params = layer_norm.parameters();
-            
-            params.insert(params.end(), l1_params.begin(), l1_params.end());
-            params.insert(params.end(), l2_params.begin(), l2_params.end());
-            params.insert(params.end(), norm_params.begin(), norm_params.end());
+
+            auto append_params = [&](RootLayer& layer) {
+                params.insert(params.end(), layer.parameters().begin(), layer.parameters().end());
+            };
+
+            append_params(linear_layer_1);
+            append_params(linear_layer_2);
+            append_params(layer_norm);
 
             return params;
         }

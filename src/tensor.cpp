@@ -291,19 +291,22 @@ Tensor Tensor::squeeze(const std::optional<size_t> axis){
 
 Tensor Tensor::expand(std::vector<size_t> target){
     std::vector<size_t> new_strides = strides;
-    if(shape_check(target)){
-        for(size_t i=0; i<target.size(); i++){
-            if(shapes[i] > target[i]) throw std::runtime_error("Target shape should be greater");
-            if(shapes[i] == 1 && target[i] == 1) continue;
-            if(shapes[i] == 1) new_strides[i] = 0;
+    try{
+        if(shape_check(target)){
+            for(size_t i=0; i<target.size(); i++){
+                if(shapes[i] > target[i]) throw std::runtime_error("Target shape should be greater");
+                if(shapes[i] == 1 && target[i] == 1) continue;
+                if(shapes[i] == 1) new_strides[i] = 0;
+            }
         }
-    }
-    // view.shapes = target;
-    // view.strides = new_strides;
-    // return view;
-    return Tensor(this->basePtr, target, new_strides);
-}
 
+        return Tensor(this->basePtr, target, new_strides);
+    }
+    catch(const std::runtime_error& rerr){
+        std::cout<<"Runtime error in expand function: "<<rerr.what()<<std::endl;
+    } 
+    return *this;
+}
 
 Tensor Tensor::mask_filled(const Tensor& mask, double replace){
     if(mask.size() != size()) throw std::invalid_argument("Mask/Matrix size mismatch");

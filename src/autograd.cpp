@@ -263,14 +263,16 @@ std::shared_ptr<TensorX> log_softmax(std::shared_ptr<TensorX> x, const size_t ax
 
 std::shared_ptr<TensorX> layer_norm(std::shared_ptr<TensorX> x, std::shared_ptr<TensorX> gamma, std::shared_ptr<TensorX> beta, const size_t axis){
     std::shared_ptr<TensorX> mean_of_x = mean(x, axis);
-    std::shared_ptr<TensorX> centered = subtract(x, mean_of_x);
+    std::shared_ptr<TensorX> unsqueeze_mean = unsqueeze(mean_of_x, axis);
+    std::shared_ptr<TensorX> centered = subtract(x, unsqueeze_mean);
     std::shared_ptr<TensorX> squared = pow(centered, 2);
     std::shared_ptr<TensorX> variance = mean(squared, axis);
 
-    double e = 1e-12;
+    double e = 1e-6;
     std::shared_ptr<TensorX> var = add(variance, e);
     std::shared_ptr<TensorX> std = sqrt(var);
-    std::shared_ptr<TensorX> lnorm = divide(centered, std);
+    std::shared_ptr<TensorX> unsqueeze_std = unsqueeze(std, axis);
+    std::shared_ptr<TensorX> lnorm = divide(centered, unsqueeze_std);
     std::shared_ptr<TensorX> mul = multiply(gamma, lnorm);
     std::shared_ptr<TensorX> res = add(mul, beta);
     return res;
@@ -383,8 +385,9 @@ std::shared_ptr<TensorX> mean(std::shared_ptr<TensorX> x, const size_t axis){
     std::shared_ptr<TensorX> z = std::make_shared<TensorX>(result, true);
 
     auto backward_fn = [x,z, axis](){
-        Tensor grad_z = z->get_grad() * (1.0/x->get_data().shape()[axis]);
-        Tensor res = grad_z.expand(x->get_data().shape());
+        Tensor grad_z = z->get_grad().unsqueeze(axis);
+        double scale = 1.0/x->get_data().shape()[axis];
+        Tensor res = (grad_z * scale).expand(x->get_data().shape());
         x->accumulate(res);
     };
 
@@ -681,6 +684,15 @@ std::shared_ptr<TensorX> concat(std::vector<std::shared_ptr<TensorX>> x, const s
     std::shared_ptr<Autograd> autograd = std::make_shared<Autograd>(backward_fn, x);
     z->set_autograd_fn(autograd);
     return z;
+}
+
+std::shared_ptr<TensorX> stack(std::vector<std::shared_ptr<TensorX>>& x, const size_t axis){
+    std::vector<std::shared_ptr<TensorX>> stack_list;
+    for(std::shared_ptr<TensorX> t: x) {
+        stack_list.push_back(unsqueeze(t, axis));
+    }
+
+    return concat(stack_list, axis);   
 }
 
 std::shared_ptr<TensorX> slice(std::shared_ptr<TensorX> x, std::vector<size_t> start, std::vector<size_t> shape, const std::optional<std::vector<size_t>>& _strides){

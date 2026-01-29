@@ -6,7 +6,7 @@
 #include "tensor_fac.h"
 #include "tensor.h"
 
-class LayerNormalization : RootLayer {
+class LayerNormalization : public RootLayer {
     std::shared_ptr<TensorX> gamma;
     std::shared_ptr<TensorX> beta;
     size_t axis;
@@ -26,9 +26,16 @@ class LayerNormalization : RootLayer {
             try{
                 return layer_norm(input, gamma, beta, axis);
             }
+            catch(const std::runtime_error& rerr){
+                std::cout<<"Runtime Error in Layer Normalization Layer: "<<rerr.what()<<std::endl;
+            }
+            catch(const std::invalid_argument& iarg){
+                std::cout<<"Invalid Argument in Layer Normalization Layer: "<<iarg.what()<<std::endl;
+            }
             catch(const std::exception& err){
                 std::cout<<"Error in Layer Normalization Layer: "<<err.what()<<std::endl;
             }
+            
             return input;
         }
 

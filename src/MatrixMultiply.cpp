@@ -96,7 +96,7 @@ Tensor MatrixMul::matmul(Tensor x, Tensor y){
         b.reshape(b_shape);
 
         if(a_shape[0] != b_shape[0] || a_shape[2] != b_shape[1]) {
-            throw std::runtime_error("Incompatible shapes");
+            throw std::runtime_error("Matrix multiplication is not possible due to shape mismatch: " + vec_string(a_shape) + " v " + vec_string(b_shape));
         }
         c = mul.batch_multiplication(a,b);
         a.reshape(shape_a);
@@ -104,7 +104,7 @@ Tensor MatrixMul::matmul(Tensor x, Tensor y){
     }   
     else if(a.ndim() == 2 && b.ndim() == 2) {
         if(shape_a[1] != shape_b[0]) {
-            throw std::runtime_error("Incompatible shapes");
+            throw std::runtime_error("Matrix multiplication is not possible due to shape mismatch: " + vec_string(shape_a) + " v " + vec_string(shape_b));
         }
         c = mul.single_multiplication(a,b);
     }
@@ -113,7 +113,7 @@ Tensor MatrixMul::matmul(Tensor x, Tensor y){
         a_shape[0] = std::accumulate(shape_a.begin(), shape_a.end()-2, size_t{1}, std::multiplies<size_t>());
         a.reshape(a_shape);
         if(a_shape[2] != shape_b[0]) {
-            throw std::runtime_error("Incompatible shapes");
+            throw std::runtime_error("Matrix multiplication is not possible due to shape mismatch: " + vec_string(a_shape) + " v " + vec_string(shape_b));
         }
         c = mul.broadcast_multiplication(a,b);
         a.reshape(shape_a);
