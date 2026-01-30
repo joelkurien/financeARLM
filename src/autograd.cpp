@@ -263,16 +263,21 @@ std::shared_ptr<TensorX> log_softmax(std::shared_ptr<TensorX> x, const size_t ax
 
 std::shared_ptr<TensorX> layer_norm(std::shared_ptr<TensorX> x, std::shared_ptr<TensorX> gamma, std::shared_ptr<TensorX> beta, const size_t axis){
     std::shared_ptr<TensorX> mean_of_x = mean(x, axis);
-    std::shared_ptr<TensorX> unsqueeze_mean = unsqueeze(mean_of_x, axis);
-    std::shared_ptr<TensorX> centered = subtract(x, unsqueeze_mean);
+    if(!x->get_data().shape_check(mean_of_x->get_data().shape())){
+        mean_of_x = unsqueeze(mean_of_x, axis);
+    } 
+    std::shared_ptr<TensorX> centered = subtract(x, mean_of_x);
     std::shared_ptr<TensorX> squared = pow(centered, 2);
     std::shared_ptr<TensorX> variance = mean(squared, axis);
 
     double e = 1e-6;
     std::shared_ptr<TensorX> var = add(variance, e);
     std::shared_ptr<TensorX> std = sqrt(var);
-    std::shared_ptr<TensorX> unsqueeze_std = unsqueeze(std, axis);
-    std::shared_ptr<TensorX> lnorm = divide(centered, unsqueeze_std);
+    if(!centered->get_data().shape_check(std->get_data().shape())){
+        std = unsqueeze(std, axis);
+    }
+
+    std::shared_ptr<TensorX> lnorm = divide(centered, std);
     std::shared_ptr<TensorX> mul = multiply(gamma, lnorm);
     std::shared_ptr<TensorX> res = add(mul, beta);
     return res;

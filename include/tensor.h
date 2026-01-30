@@ -83,14 +83,12 @@ class Tensor {
         const std::vector<size_t> computeStrides(std::vector<size_t> shps) const;
 
     public:
-        const size_t dimens = dim;
-        Tensor() = default;
+        Tensor() {dim = 0;};
         Tensor(std::vector<size_t> shape_list);
         Tensor(std::vector<double> vec, std::vector<size_t> shape_list);
         Tensor(double* ptr, std::vector<size_t> shape_list, std::vector<size_t> strides);
         Tensor(std::vector<double> vec, std::vector<size_t> shape_list, std::vector<size_t> _strides);
         Tensor(double* ptr, std::vector<size_t> shape_list);
-
         //copy constructor
         Tensor(const Tensor& other);
         Tensor& operator= (const Tensor& other);

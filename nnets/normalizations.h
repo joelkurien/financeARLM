@@ -9,21 +9,20 @@
 class LayerNormalization : public RootLayer {
     std::shared_ptr<TensorX> gamma;
     std::shared_ptr<TensorX> beta;
+    
     size_t axis;
+    size_t in_features;
 
     public:
-        LayerNormalization() 
-            : RootLayer(), gamma(nullptr), beta(nullptr) {}
+        LayerNormalization(size_t in_feat) 
+            : in_features(in_feat), gamma(nullptr), beta(nullptr) {
+                gamma = tensor::create(ones({1, in_features}), true);
+                beta = tensor::create(ones({1, in_features}), true);
+            }
 
         virtual std::shared_ptr<TensorX> forward(std::shared_ptr<TensorX> input) override{
-            if(gamma == nullptr && beta == nullptr){
-                size_t last_dim = input->get_data().ndim()-1;
-                axis = last_dim;
-                size_t in_feat = input->get_data().shape()[last_dim];
-                gamma = tensor::create(ones({1, in_feat}), true);
-                beta = tensor::create(ones({1, in_feat}), true);
-            }
             try{
+                axis = input->get_data().ndim()-1;
                 return layer_norm(input, gamma, beta, axis);
             }
             catch(const std::runtime_error& rerr){

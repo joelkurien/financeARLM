@@ -201,7 +201,9 @@ bool Tensor::shape_check(std::vector<size_t> t_shp){
     }
 
     for(size_t i=0; i<maxl; i++)
-        if(!(smv[maxl-i-1] == trg[maxl-i-1] || smv[maxl-i-1] == 1 || trg[maxl-i-1] == 1)) throw std::runtime_error("Shapes mismatch"+vec_string(shapes)+" vs "+vec_string(t_shp));
+        if(!(smv[maxl-i-1] == trg[maxl-i-1] || smv[maxl-i-1] == 1 || trg[maxl-i-1] == 1)){
+            return false; 
+        }
     return true;
 }
 
@@ -367,9 +369,8 @@ Tensor Tensor::slice(size_t start, size_t end, std::vector<size_t> shape_list){
 
 Tensor Tensor::reshape(std::vector<size_t> new_shape){
     size_t p = std::accumulate(new_shape.begin(), new_shape.end(), size_t{1}, std::multiplies<size_t>());
-    if(size() != p) return Tensor();
-    std::vector<size_t> new_strides = computeStrides(new_shape);
-    return Tensor(basePtr, new_shape, new_strides);
+    if(size() != p) throw std::runtime_error("Cannot Reshape: The size of the new shape is greater than the current shape: " + vec_string(shapes) + " v " + vec_string(new_shape)); 
+    return Tensor(this->basePtr, new_shape);
 }
 
 Tensor Tensor::permute(const std::optional<std::vector<size_t>>& rotaxis) {
@@ -810,7 +811,7 @@ void Tensor::xavier_ud(const size_t fan_in, const size_t fan_out){
     double limit = std::sqrt(6.0 / (double)(fan_in + fan_out));
 
     std::random_device rd;
-    std::mt19937 gen(42);
+    std::mt19937 gen(rd());
     std::uniform_real_distribution<double> dist(-limit, limit);
 
     for(size_t i=0; i<size(); i++){

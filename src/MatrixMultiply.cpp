@@ -1,6 +1,6 @@
 #include "MatrixMultiply.h"
 
-Tensor MatrixMul::batch_multiplication(const Tensor& a, const Tensor& b){
+Tensor MatrixMul::batch_multiplication(const Tensor& a, const Tensor& b, const std::vector<size_t> batch_shape){
     std::vector<size_t> a_shape = a.shape();
     std::vector<size_t> b_shape = b.shape();
 
@@ -10,7 +10,7 @@ Tensor MatrixMul::batch_multiplication(const Tensor& a, const Tensor& b){
     int M = static_cast<int>(a_shape[1]);
     int K = static_cast<int>(a_shape[2]);
     int N = static_cast<int>(b_shape[2]);
-
+    
     const int stride_a = a.get_strides()[0];
     const int stride_b = b.get_strides()[0];
     const int stride_c = M*N;
@@ -27,6 +27,11 @@ Tensor MatrixMul::batch_multiplication(const Tensor& a, const Tensor& b){
         cblas_dgemm(layout, transA, transB, M, N, K, 
                     alpha, a_ptr, lda, b_ptr, ldb, beta, c_ptr, N);
     }
+
+    std::vector<size_t> final_shape(batch_shape.begin(), batch_shape.end());
+    final_shape.push_back(M);
+    final_shape.push_back(N);
+    c = c.reshape(final_shape);
     return c;
 }
 
@@ -80,7 +85,6 @@ Tensor MatrixMul::matmul(Tensor x, Tensor y){
     Tensor a = x.contiguous();
     Tensor b = y.contiguous();
 
-    Tensor c;
     const std::vector<size_t> shape_a = a.shape();
     const std::vector<size_t> shape_b = b.shape();
 
@@ -89,36 +93,36 @@ Tensor MatrixMul::matmul(Tensor x, Tensor y){
         std::vector<size_t> a_shape = {0,shape_a[a.ndim()-2], shape_a[a.ndim()-1]};
         std::vector<size_t> b_shape= {0,shape_b[b.ndim()-2], shape_b[b.ndim()-1]};
 
+        std::vector<size_t> batch_shape(shape_a.begin(), shape_a.end()-2);
         a_shape[0] = std::accumulate(shape_a.begin(), shape_a.end()-2, size_t{1}, std::multiplies<size_t>());
-        a.reshape(a_shape);
+        a = a.reshape(a_shape);
 
         b_shape[0] = std::accumulate(shape_b.begin(), shape_b.end()-2, size_t{1}, std::multiplies<size_t>());
-        b.reshape(b_shape);
+        b = b.reshape(b_shape);
 
         if(a_shape[0] != b_shape[0] || a_shape[2] != b_shape[1]) {
             throw std::runtime_error("Matrix multiplication is not possible due to shape mismatch: " + vec_string(a_shape) + " v " + vec_string(b_shape));
         }
-        c = mul.batch_multiplication(a,b);
-        a.reshape(shape_a);
-        b.reshape(shape_b);
+        Tensor c = mul.batch_multiplication(a,b, batch_shape);
+        return c;
     }   
     else if(a.ndim() == 2 && b.ndim() == 2) {
         if(shape_a[1] != shape_b[0]) {
             throw std::runtime_error("Matrix multiplication is not possible due to shape mismatch: " + vec_string(shape_a) + " v " + vec_string(shape_b));
         }
-        c = mul.single_multiplication(a,b);
+        return mul.single_multiplication(a,b);
     }
     else if(a.ndim() >=3 && b.ndim() == 2){
         std::vector<size_t> a_shape = {0,shape_a[a.ndim()-2], shape_a[a.ndim()-1]};
         a_shape[0] = std::accumulate(shape_a.begin(), shape_a.end()-2, size_t{1}, std::multiplies<size_t>());
-        a.reshape(a_shape);
+        a = a.reshape(a_shape);
         if(a_shape[2] != shape_b[0]) {
             throw std::runtime_error("Matrix multiplication is not possible due to shape mismatch: " + vec_string(a_shape) + " v " + vec_string(shape_b));
         }
-        c = mul.broadcast_multiplication(a,b);
-        a.reshape(shape_a);
+        Tensor c = mul.broadcast_multiplication(a,b);
+        return c;
     } else {
         throw std::runtime_error("This dimensional multiplication is not currently available, maybe soon many be never, who knows");
     }
-    return c;
+    return Tensor();
 }

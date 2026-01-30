@@ -16,7 +16,7 @@ class MatrixMul {
         const double alpha = 1;
         const double beta = 0;
 
-        Tensor batch_multiplication(const Tensor& a, const Tensor& b);
+        Tensor batch_multiplication(const Tensor& a, const Tensor& b, const std::vector<size_t> batch_shape);
 
         Tensor single_multiplication(const Tensor& a, const Tensor& b);
 
