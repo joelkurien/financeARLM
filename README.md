@@ -77,10 +77,13 @@ I forgot to write my updates yesterday, so I am writing all my updates today, I 
 **Day 4**  
 Create the Variable Selection Network, the network works fine at least mathematically for 3D tensors but for some reasons does not work for 2D tensors due to some shape handling issue. Need to look into that. Overall couple more layers left and we will port the c++ librarires to python to build a useable application for my library.
 
+**Day 5**  
+Fixed Calculation and parameter exposition in VSN and fixed static encoder. There are still issue like vanishing and exploding values that needs fixing, will see if the issues fixes itself once I implement the optimizers and if convergences will handle it or not. Otherwise, I will spend another eternity in fixing that issue.
 
 ## Backtesting Engine
 
 Designed and implemented the foundation of a custom backtesting engine intended for seamless integration with the ARLM, enabling direct evaluation of strategy outputs generated from financial text analysis.
+
 
 
 
