@@ -19,11 +19,6 @@ class Static_Encoder : public RootLayer {
     GRN grn_layer_e;
     VSN selection_layer;
 
-    std::shared_ptr<TensorX> c_s;
-    std::shared_ptr<TensorX> c_c;
-    std::shared_ptr<TensorX> c_h;
-    std::shared_ptr<TensorX> c_e;
-    
     public:
         Static_Encoder (size_t units, double dr, size_t in_feat, size_t n_feat)
             : selection_layer(units, dr, in_feat, n_feat),
