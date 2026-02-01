@@ -48,8 +48,8 @@ class LSTM : public RootLayer {
             for(size_t idx=0; idx<num_splits; idx++){
                 std::shared_ptr<TensorX> f = Sigmoid().forward(add(forget_x_list[idx], linear_layers[1].forward(h_prev)));
                 std::shared_ptr<TensorX> i = Sigmoid().forward(add(ignore_x_list[idx], linear_layers[3].forward(h_prev)));
-                std::shared_ptr<TensorX> c = Tanh().forward(add(ignore_x_list[idx], linear_layers[5].forward(h_prev)));
-                std::shared_ptr<TensorX> o = Sigmoid().forward(add(ignore_x_list[idx], linear_layers[7].forward(h_prev)));
+                std::shared_ptr<TensorX> c = Tanh().forward(add(candidate_x_list[idx], linear_layers[5].forward(h_prev)));
+                std::shared_ptr<TensorX> o = Sigmoid().forward(add(filter_x_list[idx], linear_layers[7].forward(h_prev)));
 
                 cell_prev = add(multiply(f, cell_prev), multiply(i, c));
                 h_prev = multiply(o, tanh(cell_prev));
