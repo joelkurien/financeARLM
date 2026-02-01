@@ -80,9 +80,13 @@ Create the Variable Selection Network, the network works fine at least mathemati
 **Day 5**  
 Fixed Calculation and parameter exposition in VSN and fixed static encoder. There are still issue like vanishing and exploding values that needs fixing, will see if the issues fixes itself once I implement the optimizers and if convergences will handle it or not. Otherwise, I will spend another eternity in fixing that issue.
 
+**Day 6**  
+Created and pushed LSTM Layer, i haven't tested it, will test it later to see the hellhole that I have created, why the fuck did i decide the build the entire thing from scratch, if at the end this shit does not work - I am breaking my PC and killing my university, FUCK my life mannnnnn.
+
 ## Backtesting Engine
 
 Designed and implemented the foundation of a custom backtesting engine intended for seamless integration with the ARLM, enabling direct evaluation of strategy outputs generated from financial text analysis.
+
 
 
 
