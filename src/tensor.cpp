@@ -848,6 +848,13 @@ void Tensor::make2d(std::vector<size_t>& shape_list, const size_t axis){
         shape_list.insert(shape_list.begin(), 1);
 }
 
+Tensor elemental_max(const Tensor& a, const Tensor& b){
+    Tensor x = a.contiguous();
+    Tensor y = b.contiguous();
+
+    return replace(x>y, x, y);
+}
+
 Tensor concatenate(const std::vector<Tensor>& tensor_list, const size_t axis){
     std::vector<size_t> conc_shape = tensor_list[0].shape();
     

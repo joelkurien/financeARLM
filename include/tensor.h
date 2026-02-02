@@ -184,6 +184,7 @@ class Tensor {
 };
 
 Tensor replace(const Tensor& mask, const Tensor& a, const Tensor& b);
+Tensor elemental_max(const Tensor& a, const Tensor& b);
 Tensor concatenate(const std::vector<Tensor>& tensor_list, const size_t axis); //works
 Tensor dot(Tensor x, Tensor y, const size_t axis);
 

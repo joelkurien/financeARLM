@@ -87,6 +87,7 @@ std::shared_ptr<TensorX> stack(std::vector<std::shared_ptr<TensorX>>& x, const s
 std::shared_ptr<TensorX> slice(std::shared_ptr<TensorX> x, std::vector<size_t> start, std::vector<size_t> shape, const std::optional<std::vector<size_t>>& _strides = std::nullopt); 
 std::shared_ptr<TensorX> masked_fill(std::shared_ptr<TensorX> x, const Tensor& mask, double replace);
 std::shared_ptr<TensorX> replace(const Tensor& mask, std::shared_ptr<TensorX> x, std::shared_ptr<TensorX> y);
+std::shared_ptr<TensorX> elemental_max(std::shared_ptr<TensorX> x, std::shared_ptr<TensorX> y);
 
 std::shared_ptr<TensorX> dropout(std::shared_ptr<TensorX> x, const double p, const bool training, Tensor& mask);
 // pinball loss

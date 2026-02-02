@@ -770,6 +770,23 @@ std::shared_ptr<TensorX> replace( const Tensor& mask, std::shared_ptr<TensorX> x
     return z;
 }
 
+std::shared_ptr<TensorX> elemental_max(std::shared_ptr<TensorX> x, std::shared_ptr<TensorX> y){
+    Tensor result = elemental_max(x->get_data(), y->get_data());
+    std::shared_ptr<TensorX> z =std::make_shared<TensorX>(result, true);
+
+    auto backward_fn = [x, y, z] {
+        Tensor grad_z = z->get_grad();
+
+        Tensor grad_x = grad_z * (x->get_data() > y->get_data());
+        Tensor grad_y = grad_z * (x->get_data() < y->get_data());
+        x->accumulate(grad_x);
+        y->accumulate(grad_y);
+    };
+
+    std::shared_ptr<Autograd> autograd = std::make_shared<Autograd>(backward_fn, std::vector{x, y});
+    z->set_autograd_fn(autograd);
+    return z;
+}
 
 std::shared_ptr<TensorX> sqrt(std::shared_ptr<TensorX> x){
    Tensor result = x->get_data().sqrt();
@@ -854,9 +871,9 @@ std::shared_ptr<TensorX> dropout(std::shared_ptr<TensorX> x, const double p, con
 std::shared_ptr<TensorX> pinball_loss(std::shared_ptr<TensorX> y, std::shared_ptr<TensorX> y_pred, const double tau){
     if(tau < 0 || tau > 1) throw std::invalid_argument("Tau should lie in the range from 0 - 1");
     std::shared_ptr<TensorX> success = multiply(subtract(y, y_pred), tau);
-    std::shared_ptr<TensorX> failure = multiply(subtract(y, y_pred), 1-tau);
-    std::shared_ptr<TensorX> result = max(success, failure);
-    return result;
+    std::shared_ptr<TensorX> failure = multiply(subtract(y, y_pred), tau-1);
+    std::shared_ptr<TensorX> result = elemental_max(success, failure);
+    return mean(result,0);
 }
 
 
