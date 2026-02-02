@@ -1,8 +1,5 @@
 #include "autograd.h"
-#include "Linear.h"
 #include "RootLayer.h"
-#include "activations.h"
-#include "dropout.h"
 #include "tensor.h"
 #include "tensor_fac.h"
 
