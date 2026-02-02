@@ -83,9 +83,18 @@ Fixed Calculation and parameter exposition in VSN and fixed static encoder. Ther
 **Day 6**  
 Created and pushed LSTM Layer, i haven't tested it, will test it later to see the hellhole that I have created, why the fuck did i decide the build the entire thing from scratch, if at the end this shit does not work - I am breaking my PC and killing my university, FUCK my life mannnnnn.
 
+**Day 7**  
+Created masked interpretable Multi-head attention layer, this this I have completed all feed-forward layers required to build my Temporal fusion transformer architecture. This itself is a big milestone in my computer science career, I never thought I would be able to reach this point in the project without dropping it, I know noone else will care or appreciate this, but I am extremely proud of myself. The next step is to build the optimizer and test a single raw cycle, after that we will port this to python as a library.  
+- Next in the agenda is to create the TFT architecture proper in python
+- Convert the model into an API
+- Create a small scale website, where users can export files to my app and maybe within 15-20 mins get a result of the different features that are affecting their results.
+
+I don't know if I will be able to do all that but it will be very cool. I don't think I might get a job with this application, since I am doing too much for nothing, but it is my small project for all I care.
+
 ## Backtesting Engine
 
 Designed and implemented the foundation of a custom backtesting engine intended for seamless integration with the ARLM, enabling direct evaluation of strategy outputs generated from financial text analysis.
+
 
 
 
