@@ -143,6 +143,8 @@ class Tensor {
         Tensor operator/ (const Tensor& t); //works
         Tensor operator+= (const Tensor& t); //works
         Tensor operator+= (const double t); //works
+        Tensor operator-= (const Tensor& t); //works
+        Tensor operator-= (const double t); //works
         Tensor operator== (const Tensor& t);
         Tensor operator> (const Tensor& t);
         Tensor operator< (const Tensor& t);

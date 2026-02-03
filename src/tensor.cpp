@@ -181,10 +181,10 @@ size_t Tensor::size() const { return std::accumulate(shapes.begin(), shapes.end(
 bool Tensor::empty() const { return (dim == 0 ? true : false); }
 
 Tensor Tensor::view(std::vector<size_t> new_shape){
-    Tensor vw = *this;
-    vw.basePtr = this->basePtr;
-    vw.shapes = new_shape;
-    return vw;
+    size_t new_size = std::accumulate(new_shape.begin(), new_shape.end(), size_t{1}, std::multiplies<size_t>()); 
+    if(new_size != size()) throw std::runtime_error("The new shape mismatches with the existing shape" 
+                                                    + vec_string(shapes) + " v " + vec_string(new_shape) );
+    return Tensor(this->basePtr, new_shape);
 }
 
 //region broadcasting rules
@@ -474,6 +474,20 @@ Tensor Tensor::operator+= (const Tensor& t){
     for(size_t i=0; i<size(); i++){
         std::vector<size_t> idx = this->index(i);
         this->basePtr[this->jumpTo(idx)] += t.at(idx);
+    }
+    
+    return *this;
+}
+
+Tensor Tensor::operator-= (const Tensor& t){
+    if(this->shape() != t.shape()) throw std::invalid_argument("Inplace subtraction matrix shapes incompatible");
+
+    size_t total_size = this->size();
+
+    #pragma omp parallel for simd schedule(static)
+    for(size_t i=0; i<size(); i++){
+        std::vector<size_t> idx = this->index(i);
+        this->basePtr[this->jumpTo(idx)] -= t.at(idx);
     }
     
     return *this;
