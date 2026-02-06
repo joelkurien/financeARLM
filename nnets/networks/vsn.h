@@ -26,11 +26,11 @@ class VSN: public RootLayer {
         VSN(size_t units, double dr, size_t in_feat, size_t n_feat)
             : nodes(units), dropout_rate(dr), n_features(n_feat), 
               in_features(in_feat),
-              gating_grn_layer(units, dr, units*n_feat), 
+              gating_grn_layer(units, units*n_feat, dr), 
               weight_projection(units, n_feat, true) 
         {
             for(size_t feat = 0; feat < n_features; feat++){
-                grn_layers.emplace_back(GRN(nodes, dropout_rate, nodes));
+                grn_layers.emplace_back(GRN(nodes, nodes, dropout_rate));
                 linear_layers.emplace_back(Linear(1, nodes, true));
             }
         }

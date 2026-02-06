@@ -11,7 +11,9 @@ class Optimizer {
     public:
         Optimizer(double lr) : learning_rate(lr), time_step(0) {}
 
-        virtual void step();
+        virtual void step() = 0;
+
+        void set_lr(double lr) { learning_rate = lr; }
 };
 
 #endif

@@ -13,6 +13,7 @@ class Autograd {
     public:
         std::function<void()> backward_function;
         std::vector<std::shared_ptr<TensorX>> inputs;
+        std::string op_name;
         Autograd(std::function<void()> backward_fn, std::vector<std::shared_ptr<TensorX>> autograd_inputs);
 };
 
@@ -78,7 +79,7 @@ std::shared_ptr<TensorX> unsqueeze(std::shared_ptr<TensorX> x, size_t axis);
 std::shared_ptr<TensorX> expand(std::shared_ptr<TensorX> x, std::vector<size_t> target);
 
 std::shared_ptr<TensorX> matmul(std::shared_ptr<TensorX> x, std::shared_ptr<TensorX> y);
-std::shared_ptr<TensorX> transpose(std::shared_ptr<TensorX> x);
+std::shared_ptr<TensorX> transpose(std::shared_ptr<TensorX> x, const std::optional<size_t> a1 = std::nullopt, const std::optional<size_t> a2 = std::nullopt);
 std::shared_ptr<TensorX> permute(std::shared_ptr<TensorX> x, const std::optional<std::vector<size_t>>& rotaxis = std::nullopt);
 std::shared_ptr<TensorX> reshape(std::shared_ptr<TensorX> x, std::vector<size_t> new_shape);
 std::vector<std::shared_ptr<TensorX>> chunk(std::shared_ptr<TensorX> x, size_t num_heads, size_t axis);
@@ -90,6 +91,6 @@ std::shared_ptr<TensorX> replace(const Tensor& mask, std::shared_ptr<TensorX> x,
 std::shared_ptr<TensorX> elemental_max(std::shared_ptr<TensorX> x, std::shared_ptr<TensorX> y);
 
 std::shared_ptr<TensorX> dropout(std::shared_ptr<TensorX> x, const double p, const bool training, Tensor& mask);
-// pinball loss
+std::shared_ptr<TensorX> pinball_loss(std::shared_ptr<TensorX> y, std::shared_ptr<TensorX> y_pred, const double tau);
 #endif
 

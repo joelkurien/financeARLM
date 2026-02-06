@@ -384,11 +384,16 @@ Tensor Tensor::permute(const std::optional<std::vector<size_t>>& rotaxis) {
     return Tensor(this->basePtr, new_shape, new_strides);
 }
 
-Tensor Tensor::transpose(){
+Tensor Tensor::transpose(std::optional<size_t> a1, std::optional<size_t> a2){
+    size_t ax1 = a1.value_or(dim-1);
+    size_t ax2 = a2.value_or(dim-2);
+
+    if(ax1 < 0 || ax1 >= dim || ax2 < 0 || ax2 >= dim)
+        throw std::runtime_error("Invalid axis for transpose");
     std::vector<size_t> new_shape = shapes;    
     std::vector<size_t> new_strides = strides;
-    std::swap(new_shape[dim-1], new_shape[dim-2]);
-    std::swap(new_strides[dim-1], new_strides[dim-2]);
+    std::swap(new_shape[ax1], new_shape[ax2]);
+    std::swap(new_strides[ax1], new_strides[ax2]);
     return Tensor(this->basePtr, new_shape, new_strides);}
 
 std::vector<Tensor> Tensor::split_uneven(const std::vector<size_t>& split_len, const size_t axis){
@@ -527,7 +532,7 @@ Tensor Tensor::sum(const size_t axis){
         }
         result[i] = sum;
     }
-
+   
     return Tensor(result, reduced_shape);
 }
 

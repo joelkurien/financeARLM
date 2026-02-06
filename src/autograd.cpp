@@ -5,14 +5,18 @@
 
 namespace broadcasts {
     Tensor grad_reshape(Tensor gradient, const std::vector<size_t> target_shape){
-        const std::vector<size_t> gradient_shape = gradient.shape();
-        for(int i{0}; i<gradient.ndim() && i<target_shape.size(); i++){
-            if(gradient_shape[i] > 1 && target_shape[i] == 1) {
-                gradient = gradient.sum(i);
-            }
+        while (gradient.ndim() > target_shape.size()) {
+            gradient = gradient.sum(0);
         }
         
-        return gradient;
+        for(int i = target_shape.size() - 1; i >= 0; i--){
+            if(gradient.shape()[i] > 1 && target_shape[i] == 1) {
+                gradient = gradient.sum(i);
+                gradient = gradient.unsqueeze(i);
+            } 
+        }
+        
+        return gradient.reshape(target_shape);
     }
 }
 
@@ -39,6 +43,9 @@ void TensorX::set_autograd_fn(std::shared_ptr<Autograd> fn){
 
 void TensorX::accumulate(Tensor& new_grad){
     if(!required_grad) return;
+    if(grad_.shape() != new_grad.shape()) 
+        throw std::runtime_error("Incoming gradient shapes mismatch - current gradient shape: " + vec_string(grad_.shape()) + " incoming gradient shape: " + vec_string(new_grad.shape()));
+
     if(grad_.size() == 0)
         grad_ = new_grad;
     else{
@@ -48,7 +55,9 @@ void TensorX::accumulate(Tensor& new_grad){
 
 void TensorX::grad_zeros() {
     if(required_grad)
-        grad_ = Tensor(data_.shape());
+       for(size_t i=0; i<grad_.size(); i++){
+            grad_.data()[i] = 0;
+       } 
 }
 
 void TensorX::backward(const std::optional<Tensor>& grad) {
@@ -78,6 +87,7 @@ void TensorX::backward(const std::optional<Tensor>& grad) {
 
     for(auto& tensor: topological_order){
         if(tensor->autograd_function){
+            std::cout<<tensor->autograd_function->op_name<<std::endl;
             tensor->autograd_function->backward_function();
         }
     }
@@ -111,6 +121,7 @@ std::shared_ptr<TensorX> multiply(std::shared_ptr<TensorX> x, std::shared_ptr<Te
     };
 
     std::shared_ptr<Autograd> autograd = std::make_shared<Autograd>(backward_fn, std::vector{x, y});
+    autograd->op_name = "Multiply Tensor";
     z->set_autograd_fn(autograd);
     return z;
 }
@@ -125,6 +136,7 @@ std::shared_ptr<TensorX> multiply(std::shared_ptr<TensorX> x, double y){
     };
 
     std::shared_ptr<Autograd> autograd = std::make_shared<Autograd>(backward_fn, std::vector{x});
+    autograd->op_name = "Multiply Value";
     z->set_autograd_fn(autograd);
     return z;
 }
@@ -134,14 +146,14 @@ std::shared_ptr<TensorX> add(std::shared_ptr<TensorX> x, std::shared_ptr<TensorX
     std::shared_ptr<TensorX> z = std::make_shared<TensorX>(result, true);
 
     auto backward_fn = [x,y,z](){
-        Tensor grad_x = broadcasts::grad_reshape(z->get_grad(), x->get_data().shape());
-        Tensor grad_y = broadcasts::grad_reshape(z->get_grad(), y->get_data().shape());
-
+        Tensor grad_x = broadcasts::grad_reshape(z->get_grad(), x->get_grad().shape());
+        Tensor grad_y = broadcasts::grad_reshape(z->get_grad(), y->get_grad().shape());
         x->accumulate(grad_x);
         y->accumulate(grad_y);
     };
 
     std::shared_ptr<Autograd> autograd = std::make_shared<Autograd>(backward_fn, std::vector{x, y});
+    autograd->op_name = "Add Tensor";
     z->set_autograd_fn(autograd);
     return z;
 }
@@ -156,6 +168,7 @@ std::shared_ptr<TensorX> add(std::shared_ptr<TensorX> x, double y){
     };
 
     std::shared_ptr<Autograd> autograd = std::make_shared<Autograd>(backward_fn, std::vector{x});
+    autograd->op_name = "Add Value";
     z->set_autograd_fn(autograd);
     return z;
 }
@@ -173,6 +186,7 @@ std::shared_ptr<TensorX> subtract(std::shared_ptr<TensorX> x, std::shared_ptr<Te
     };
 
     std::shared_ptr<Autograd> autograd = std::make_shared<Autograd>(backward_fn, std::vector{x, y});
+    autograd->op_name = "Subtract Tensor";
     z->set_autograd_fn(autograd);
     return z;
 }
@@ -187,6 +201,7 @@ std::shared_ptr<TensorX> subtract(std::shared_ptr<TensorX> x, double y){
     };
 
     std::shared_ptr<Autograd> autograd = std::make_shared<Autograd>(backward_fn, std::vector{x});
+    autograd->op_name = "Subtract Value";
     z->set_autograd_fn(autograd);
     return z;
 }
@@ -206,6 +221,7 @@ std::shared_ptr<TensorX> divide(std::shared_ptr<TensorX> x, std::shared_ptr<Tens
     };
 
     std::shared_ptr<Autograd> autograd = std::make_shared<Autograd>(backward_fn, std::vector{x, y});
+    autograd->op_name = "Divide Tensor";
     z->set_autograd_fn(autograd);
     return z;
 }
@@ -220,6 +236,7 @@ std::shared_ptr<TensorX> divide(std::shared_ptr<TensorX> x, double y){
     };
 
     std::shared_ptr<Autograd> autograd = std::make_shared<Autograd>(backward_fn, std::vector{x});
+    autograd->op_name = "Divide Value";
     z->set_autograd_fn(autograd);
     return z;
 }
@@ -239,6 +256,7 @@ std::shared_ptr<TensorX> softmax(std::shared_ptr<TensorX> x, const size_t axis){
     };
 
     std::shared_ptr<Autograd> autograd = std::make_shared<Autograd>(backward_fn, std::vector{x});
+    autograd->op_name = "Softmax";
     z->set_autograd_fn(autograd);
     return z;
 }
@@ -257,6 +275,7 @@ std::shared_ptr<TensorX> log_softmax(std::shared_ptr<TensorX> x, const size_t ax
     };
 
     std::shared_ptr<Autograd> autograd = std::make_shared<Autograd>(backward_fn, std::vector{x});
+    autograd->op_name = "Log Softmax";
     z->set_autograd_fn(autograd);
     return z;
 }
@@ -294,6 +313,7 @@ std::shared_ptr<TensorX> maximum(std::shared_ptr<TensorX> x, const size_t axis){
         x->accumulate(grad_x);
     };
     std::shared_ptr<Autograd> autograd = std::make_shared<Autograd>(backward_fn, std::vector{x});
+    autograd->op_name = "Axis wise Maximum";
     z->set_autograd_fn(autograd);
     return z;
 }
@@ -309,6 +329,7 @@ std::shared_ptr<TensorX> minimum(std::shared_ptr<TensorX> x, const size_t axis){
         x->accumulate(grad_x);
     };
     std::shared_ptr<Autograd> autograd = std::make_shared<Autograd>(backward_fn, std::vector{x});
+    autograd->op_name = "Axis wise Minimum";
     z->set_autograd_fn(autograd);
     return z;
 }
@@ -325,6 +346,7 @@ std::shared_ptr<TensorX> sum(std::shared_ptr<TensorX> x, const size_t axis){
     };
 
     std::shared_ptr<Autograd> autograd = std::make_shared<Autograd>(backward_fn, std::vector{x});
+    autograd->op_name = "Axis wise sum";
     z->set_autograd_fn(autograd);
     return z;
 }
@@ -342,6 +364,7 @@ std::shared_ptr<TensorX> squeeze(std::shared_ptr<TensorX> x, std::optional<size_
     };
 
     std::shared_ptr<Autograd> autograd = std::make_shared<Autograd>(backward_fn, std::vector{x});
+    autograd->op_name = "Squeeze";
     z->set_autograd_fn(autograd);
     return z;
 }
@@ -353,11 +376,12 @@ std::shared_ptr<TensorX> unsqueeze(std::shared_ptr<TensorX> x, size_t axis){
 
     auto backward_fn = [x, z, axis](){
         Tensor grad_z = z->get_grad();
-        Tensor grad_x = grad_z.squeeze(axis);
-        x->accumulate(grad_x);
+        grad_z = grad_z.squeeze(axis);
+        x->accumulate(grad_z);
     };
 
     std::shared_ptr<Autograd> autograd = std::make_shared<Autograd>(backward_fn, std::vector{x});
+    autograd->op_name = "Unsqueeze";
     z->set_autograd_fn(autograd);
     return z;
 }
@@ -369,16 +393,12 @@ std::shared_ptr<TensorX> expand(std::shared_ptr<TensorX> x, std::vector<size_t> 
 
     auto backward_fn = [x, z](){
         Tensor grad_z = z->get_grad();
-        Tensor grad_x = grad_z;
-        for(size_t i=0; i<grad_x.ndim(); i++){
-            if(x->get_data().shape()[i] == 1 && grad_x.shape()[i] > 1){
-                grad_x = grad_x.sum(i);
-            }
-        }
+        Tensor grad_x = broadcasts::grad_reshape(grad_z, x->get_grad().shape()); 
         x->accumulate(grad_x);
     };
 
     std::shared_ptr<Autograd> autograd = std::make_shared<Autograd>(backward_fn, std::vector{x});
+    autograd->op_name = "Expand";
     z->set_autograd_fn(autograd);
     return z;
 }
@@ -397,6 +417,7 @@ std::shared_ptr<TensorX> mean(std::shared_ptr<TensorX> x, const size_t axis){
     };
 
     std::shared_ptr<Autograd> autograd = std::make_shared<Autograd>(backward_fn, std::vector{x});
+    autograd->op_name = "Mean";
     z->set_autograd_fn(autograd);
     return z;
 }
@@ -431,6 +452,7 @@ std::shared_ptr<TensorX> relu(std::shared_ptr<TensorX> x){
     };
 
     std::shared_ptr<Autograd> autograd = std::make_shared<Autograd>(backward_fn, std::vector{x});
+    autograd->op_name = "ReLU";
     z->set_autograd_fn(autograd);
     return z;
 }
@@ -468,6 +490,7 @@ std::shared_ptr<TensorX> gelu(std::shared_ptr<TensorX> x){
     };
 
     std::shared_ptr<Autograd> autograd = std::make_shared<Autograd>(backward_fn, std::vector{x});
+    autograd->op_name = "GeLU";
     z->set_autograd_fn(autograd);
     return z;
 }
@@ -498,6 +521,7 @@ std::shared_ptr<TensorX> elu(std::shared_ptr<TensorX> x, const double alpha){
     };
 
     std::shared_ptr<Autograd> autograd = std::make_shared<Autograd>(backward_fn, std::vector{x});
+    autograd->op_name = "eLU";
     z->set_autograd_fn(autograd);
     return z;
 
@@ -524,6 +548,7 @@ std::shared_ptr<TensorX> sigmoid(std::shared_ptr<TensorX> x){
     };
 
     std::shared_ptr<Autograd> autograd = std::make_shared<Autograd>(backward_fn, std::vector{x});
+    autograd->op_name = "sigmoid";
     z->set_autograd_fn(autograd);
     return z;
 }
@@ -549,6 +574,7 @@ std::shared_ptr<TensorX> tanh(std::shared_ptr<TensorX> x){
     };
 
     std::shared_ptr<Autograd> autograd = std::make_shared<Autograd>(backward_fn, std::vector{x});
+    autograd->op_name = "tanh";
     z->set_autograd_fn(autograd);
     return z;
 }
@@ -573,26 +599,29 @@ std::shared_ptr<TensorX> matmul(std::shared_ptr<TensorX> x, std::shared_ptr<Tens
         Tensor grad_z = z->get_grad();
         Tensor x_grad = MatrixMul::matmul(grad_z, y->get_data().transpose());
         Tensor y_grad = MatrixMul::matmul(x->get_data().transpose(), grad_z);
+        
         x->accumulate(x_grad);
         y->accumulate(y_grad);
     };
 
     std::shared_ptr<Autograd> autograd = std::make_shared<Autograd>(backward_fn, std::vector{x,y});
+    autograd->op_name = "Matrix Multiply";
     z->set_autograd_fn(autograd);
     return z;
 }
 
-std::shared_ptr<TensorX> transpose(std::shared_ptr<TensorX> x){
-    Tensor result = x->get_data().transpose();
+std::shared_ptr<TensorX> transpose(std::shared_ptr<TensorX> x, const std::optional<size_t> a1, const std::optional<size_t> a2){
+    Tensor result = x->get_data().transpose(a1, a2);
     std::shared_ptr<TensorX> z = std::make_shared<TensorX>(result, true);
 
-    auto backward_fn = [x, z] {
+    auto backward_fn = [x, z, a1, a2] {
         Tensor grad_z = z->get_grad();
-        Tensor grad_T = grad_z.transpose();
+        Tensor grad_T = grad_z.transpose(a1, a2);
         x->accumulate(grad_T);
     };
 
     std::shared_ptr<Autograd> autograd = std::make_shared<Autograd>(backward_fn, std::vector{x});
+    autograd->op_name = "Matrix transpose";
     z->set_autograd_fn(autograd);
     return z;
 }
@@ -618,6 +647,7 @@ std::shared_ptr<TensorX> permute(std::shared_ptr<TensorX> x, const std::optional
     };
 
     std::shared_ptr<Autograd> autograd = std::make_shared<Autograd>(backward_fn, std::vector{x});
+    autograd->op_name = "Matrix permute";
     z->set_autograd_fn(autograd);
     return z;
 }
@@ -635,6 +665,7 @@ std::shared_ptr<TensorX> reshape(std::shared_ptr<TensorX> x, std::vector<size_t>
     };
     
     std::shared_ptr<Autograd> autograd = std::make_shared<Autograd>(backward_fn, std::vector{x});
+    autograd->op_name = "Matrix reshape";
     z->set_autograd_fn(autograd);
     return z;
 }
@@ -657,6 +688,7 @@ std::vector<std::shared_ptr<TensorX>> chunk(std::shared_ptr<TensorX> x, size_t n
         x->accumulate(grad_x);
     };
     std::shared_ptr<Autograd> autograd = std::make_shared<Autograd>(backward_fn, std::vector{x});
+    autograd->op_name = "Matrix chunk";
     for(std::shared_ptr<TensorX> res: z){
         res->set_autograd_fn(autograd);
     }
@@ -687,13 +719,14 @@ std::shared_ptr<TensorX> concat(std::vector<std::shared_ptr<TensorX>> x, const s
         }
     };
     std::shared_ptr<Autograd> autograd = std::make_shared<Autograd>(backward_fn, x);
+    autograd->op_name = "Matrix concat";
     z->set_autograd_fn(autograd);
     return z;
 }
 
 std::shared_ptr<TensorX> stack(std::vector<std::shared_ptr<TensorX>>& x, const size_t axis){
     std::vector<std::shared_ptr<TensorX>> stack_list;
-    for(std::shared_ptr<TensorX> t: x) {
+    for(std::shared_ptr<TensorX>& t: x) {
         stack_list.push_back(unsqueeze(t, axis));
     }
 
@@ -720,6 +753,7 @@ std::shared_ptr<TensorX> slice(std::shared_ptr<TensorX> x, std::vector<size_t> s
     };
 
     std::shared_ptr<Autograd> autograd = std::make_shared<Autograd>(backward_fn, std::vector{x});
+    autograd->op_name = "Matrix slice";
     z->set_autograd_fn(autograd);
     return z;
 }
@@ -737,6 +771,7 @@ std::shared_ptr<TensorX> masked_fill(std::shared_ptr<TensorX> x, const Tensor& m
     };
 
     std::shared_ptr<Autograd> autograd = std::make_shared<Autograd>(backward_fn, std::vector{x});
+    autograd->op_name = "Matrix mask fill";
     z->set_autograd_fn(autograd);
     return z;
 }
@@ -766,6 +801,7 @@ std::shared_ptr<TensorX> replace( const Tensor& mask, std::shared_ptr<TensorX> x
     };
 
     std::shared_ptr<Autograd> autograd = std::make_shared<Autograd>(backward_fn, std::vector{x, y});
+    autograd->op_name = "Matrix replace";
     z->set_autograd_fn(autograd);
     return z;
 }
@@ -784,6 +820,7 @@ std::shared_ptr<TensorX> elemental_max(std::shared_ptr<TensorX> x, std::shared_p
     };
 
     std::shared_ptr<Autograd> autograd = std::make_shared<Autograd>(backward_fn, std::vector{x, y});
+    autograd->op_name = "elemental max";
     z->set_autograd_fn(autograd);
     return z;
 }
@@ -800,6 +837,7 @@ std::shared_ptr<TensorX> sqrt(std::shared_ptr<TensorX> x){
    };
 
    std::shared_ptr<Autograd> autograd = std::make_shared<Autograd>(backward_fn, std::vector{x});
+    autograd->op_name = "sqrt";
    z->set_autograd_fn(autograd);
    return z;
 }
@@ -815,6 +853,7 @@ std::shared_ptr<TensorX> exp(std::shared_ptr<TensorX> x){
    };
 
    std::shared_ptr<Autograd> autograd = std::make_shared<Autograd>(backward_fn, std::vector{x});
+    autograd->op_name = "exp";
    z->set_autograd_fn(autograd);
    return z;
 }
@@ -830,6 +869,7 @@ std::shared_ptr<TensorX> log(std::shared_ptr<TensorX> x){
    };
 
    std::shared_ptr<Autograd> autograd = std::make_shared<Autograd>(backward_fn, std::vector{x});
+    autograd->op_name = "log";
    z->set_autograd_fn(autograd);
    return z;
 }
@@ -846,6 +886,7 @@ std::shared_ptr<TensorX> pow(std::shared_ptr<TensorX> x, const double n){
    };
 
    std::shared_ptr<Autograd> autograd = std::make_shared<Autograd>(backward_fn, std::vector{x});
+    autograd->op_name = "pow";
    z->set_autograd_fn(autograd);
    return z;
 
@@ -864,6 +905,7 @@ std::shared_ptr<TensorX> dropout(std::shared_ptr<TensorX> x, const double p, con
     };
 
     std::shared_ptr<Autograd> autograd = std::make_shared<Autograd>(backward_fn, std::vector{x});
+    autograd->op_name = "dropout";
     z->set_autograd_fn(autograd);
     return z;
 }
@@ -873,7 +915,10 @@ std::shared_ptr<TensorX> pinball_loss(std::shared_ptr<TensorX> y, std::shared_pt
     std::shared_ptr<TensorX> success = multiply(subtract(y, y_pred), tau);
     std::shared_ptr<TensorX> failure = multiply(subtract(y, y_pred), tau-1);
     std::shared_ptr<TensorX> result = elemental_max(success, failure);
-    return mean(result,0);
+    for(size_t i=0; i<y->get_data().ndim()-1; i++)
+        result = mean(result, 0);
+    result = mean(result, 1);
+    return result;
 }
 
 

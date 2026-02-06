@@ -22,21 +22,31 @@ class GRN : public RootLayer {
     Linear project_layer;
     GLU glu_layer;
     LayerNormalization layer_norm;
+    Linear context_layer;
 
     size_t in_features;
+    size_t context_dim;
     public:
-        GRN( size_t units, double dr, size_t in_feat)
+        GRN( size_t in_feat, size_t units, double dr, size_t ctx_dim = -1)
             : in_features(in_feat), nodes(units), dropout_rate(dr),
+              context_dim(ctx_dim),
               linear_layer_1(in_feat, nodes, true), 
-              linear_layer_2(nodes, nodes, true),
+              linear_layer_2(nodes, 2*in_feat, true),
               dropout_layer(dropout_rate),
-              project_layer(in_feat, nodes, true),
-              layer_norm(nodes)
-        {};
+              project_layer(in_feat, in_feat, true),
+              layer_norm(in_feat)
+        {
+            if(context_dim > -1){
+                context_layer = Linear(in_feat, nodes);
+            }
+        }
 
-        virtual std::shared_ptr<TensorX> forward(std::shared_ptr<TensorX> input) override {
+        virtual std::shared_ptr<TensorX> forward(std::shared_ptr<TensorX> input, std::shared_ptr<TensorX> context = nullptr) {
             std::shared_ptr<TensorX> x = linear_layer_1.forward(input);
             x = elu_layer.forward(x);
+            if(context != nullptr && context_dim > -1){
+                x = add(x, context_layer.forward(context));
+            }
             size_t last_dim = input->get_data().ndim()-1;
             size_t out_features = input->get_data().shape()[last_dim];
             x = linear_layer_2.forward(x);

@@ -127,7 +127,7 @@ class Tensor {
         Tensor slice(size_t start, size_t end, std::vector<size_t> shape_list);
         Tensor reshape(std::vector<size_t> new_shape); //works
         Tensor permute(const std::optional<std::vector<size_t>>& rotaxis = std::nullopt); //works
-        Tensor transpose(); //works
+        Tensor transpose(std::optional<size_t> a1 = std::nullopt, std::optional<size_t> a2 = std::nullopt); //works
         std::vector<Tensor>split_uneven(const std::vector<size_t>& split_len, const size_t axis); //works
         std::vector<Tensor> chunk(const size_t num_heads, const size_t axis); //works
 //endregion data-viewing
